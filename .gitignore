@@ -1,0 +1,108 @@
+############################################
+# LARAVEL
+############################################
+
+/vendor
+/node_modules
+/public/storage
+/public/build
+/storage/*.key
+/storage/app/*
+!/storage/app/public
+/storage/debugbar
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+############################################
+# ENVIRONMENT FILES (SECRETS)
+############################################
+
+.env
+.env.backup
+.env.production
+.env.local
+.env.testing
+
+############################################
+# COMPOSER
+############################################
+
+composer.phar
+
+############################################
+# NPM / VITE
+############################################
+
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+package-lock.json
+yarn.lock
+
+############################################
+# PHPUNIT
+############################################
+
+.phpunit.result.cache
+.phpunit.cache
+
+############################################
+# IDE / EDITOR FILES
+############################################
+
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+############################################
+# OS FILES
+############################################
+
+.DS_Store
+Thumbs.db
+
+############################################
+# TEST / DEBUG
+############################################
+
+/coverage
+/phpunit.xml
+Homestead.yaml
+Homestead.json
+
+############################################
+# LOG FILES
+############################################
+
+*.log
+
+############################################
+# TEMP FILES
+############################################
+
+*.tmp
+*.temp
+*.swp
+
+############################################
+# LARAVEL MIX / VITE CACHE
+############################################
+
+/public/hot
+/public/mix-manifest.json
+
+############################################
+# DOCKER (OPTIONAL)
+############################################
+
+docker-compose.override.yml
+
+############################################
+# BACKUPS
+############################################
+
+*.bak
+*.backup
