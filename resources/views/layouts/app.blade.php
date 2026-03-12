@@ -1,36 +1,85 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ config('app.name', 'Starz') }}</title>
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #0f1115;
+            color: #f5f7fa;
+        }
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+        .bg-panel {
+            background: #181c23;
+            border: 1px solid rgba(255,255,255,.06);
+        }
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+        .creator-card,
+        .post-card {
+            background: #181c23;
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+        .locked-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,.55);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .banner-cover {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .avatar-lg {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #0f1115;
+        }
+
+        .media-thumb {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+        }
+
+        @media (max-width: 767.98px) {
+            .banner-cover {
+                height: 160px;
+            }
+
+            .media-thumb {
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    @include('partials.navbar')
+
+    <main class="py-4">
+        <div class="container">
+            @include('partials.flash')
+            @yield('content')
         </div>
-    </body>
+    </main>
+
+    @include('partials.footer')
+</body>
 </html>
