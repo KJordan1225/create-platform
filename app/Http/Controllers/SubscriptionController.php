@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Plf_subscription;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+
+class SubscriptionController extends Controller
+{
+    public function showCheckout(User $creator)
+    {
+        abort_unless($creator->isApprovedCreator(), 404);
+
+        $profile = $creator->creatorProfile;
+
+        return view('subscriptions.checkout', compact('creator', 'profile'));
+    }
+
+    public function checkout(Request $request, User $creator)
+    {
+        abort_unless($creator->isApprovedCreator(), 404);
+
+        $fan = $request->user();
+
+        abort_if($fan->id === $creator->id, 403, 'You cannot subscribe to yourself.');
+
+        $profile = $creator->creatorProfile;
+
+        if (! $profile || ! $profile->stripe_price_id) {
+            return back()->withErrors([
+                'subscription' => 'This creator is not ready for subscriptions yet.',
+            ]);
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = Session::create([
+            'mode' => 'subscription',
+            'customer_email' => $fan->email,
+            'line_items' => [[
+                'price' => $profile->stripe_price_id,
+                'quantity' => 1,
+            ]],
+            'success_url' => route('subscriptions.success') . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('creators.show', $profile->slug),
+            'metadata' => [
+                'fan_id' => $fan->id,
+                'creator_id' => $creator->id,
+                'type' => 'creator_subscription',
+            ],
+        ]);
+
+        Plf_subscription::updateOrCreate(
+            [
+                'fan_id' => $fan->id,
+                'creator_id' => $creator->id,
+            ],
+            [
+                'stripe_checkout_session_id' => $session->id,
+                'amount' => $profile->monthly_price,
+                'currency' => config('cashier.currency', 'usd'),
+                'status' => 'pending',
+            ]
+        );
+
+        return redirect($session->url);
+    }
+
+    public function success(Request $request)
+    {
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Your subscription checkout was completed. Access will be updated after confirmation.');
+    }
+
+    public function cancel(Request $request, User $creator)
+    {
+        $subscription = Plf_subscription::query()
+            ->where('fan_id', $request->user()->id)
+            ->where('creator_id', $creator->id)
+            ->firstOrFail();
+
+        $subscription->update([
+            'status' => 'canceled',
+            'canceled_at' => now(),
+            'ends_at' => now(),
+        ]);
+
+        return back()->with('success', 'Subscription canceled.');
+    }
+}

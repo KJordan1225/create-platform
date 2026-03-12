@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Tip;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+
+class TipController extends Controller
+{
+    public function showCheckout(User $creator)
+    {
+        abort_unless($creator->isApprovedCreator(), 404);
+
+        $profile = $creator->creatorProfile;
+
+        if (! $profile->allow_tips) {
+            abort(404);
+        }
+
+        return view('tips.checkout', compact('creator', 'profile'));
+    }
+
+    public function checkout(Request $request, User $creator)
+    {
+        abort_unless($creator->isApprovedCreator(), 404);
+
+        $fan = $request->user();
+
+        abort_if($fan->id === $creator->id, 403, 'You cannot tip yourself.');
+
+        $profile = $creator->creatorProfile;
+
+        if (! $profile->allow_tips) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1', 'max:500'],
+            'message' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $amountInCents = (int) round($data['amount'] * 100);
+
+        $session = Session::create([
+            'mode' => 'payment',
+            'customer_email' => $fan->email,
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => config('cashier.currency', 'usd'),
+                    'product_data' => [
+                        'name' => 'Tip for ' . $profile->display_name,
+                    ],
+                    'unit_amount' => $amountInCents,
+                ],
+                'quantity' => 1,
+            ]],
+            'success_url' => route('tips.success') . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('creators.show', $profile->slug),
+            'metadata' => [
+                'fan_id' => $fan->id,
+                'creator_id' => $creator->id,
+                'message' => $data['message'] ?? '',
+                'type' => 'creator_tip',
+            ],
+        ]);
+
+        Tip::create([
+            'fan_id' => $fan->id,
+            'creator_id' => $creator->id,
+            'amount' => $data['amount'],
+            'currency' => config('cashier.currency', 'usd'),
+            'message' => $data['message'] ?? null,
+            'stripe_checkout_session_id' => $session->id,
+            'status' => 'pending',
+        ]);
+
+        return redirect($session->url);
+    }
+
+    public function success()
+    {
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Your tip checkout was completed. Final status will update after payment confirmation.');
+    }
+}
