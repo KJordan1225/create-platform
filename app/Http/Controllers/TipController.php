@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CheckoutTipRequest;
 use App\Models\Tip;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
@@ -23,7 +23,7 @@ class TipController extends Controller
         return view('tips.checkout', compact('creator', 'profile'));
     }
 
-    public function checkout(Request $request, User $creator)
+    public function checkout(CheckoutTipRequest $request, User $creator)
     {
         abort_unless($creator->isApprovedCreator(), 404);
 
@@ -37,10 +37,7 @@ class TipController extends Controller
             abort(404);
         }
 
-        $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1', 'max:500'],
-            'message' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validated();
 
         Stripe::setApiKey(config('services.stripe.secret'));
 

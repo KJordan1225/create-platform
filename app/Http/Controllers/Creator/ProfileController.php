@@ -3,57 +3,119 @@
 namespace App\Http\Controllers\Creator;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Models\Post;
+use App\Models\PostMedia;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
-class ProfileController extends Controller
+class PostController extends Controller
 {
-    public function edit()
+    public function index()
     {
-        $creator = auth()->user();
-        $profile = $creator->creatorProfile;
+        $posts = auth()->user()
+            ->posts()
+            ->with('media')
+            ->latest()
+            ->paginate(12);
 
-        return view('creator.profile.edit', compact('creator', 'profile'));
+        return view('creator.posts.index', compact('posts'));
     }
 
-    public function update(Request $request)
+    public function create()
     {
-        $creator = auth()->user();
-        $profile = $creator->creatorProfile;
+        return view('creator.posts.create');
+    }
 
-        $data = $request->validate([
-            'display_name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:creator_profiles,slug,' . $profile->id],
-            'bio' => ['nullable', 'string', 'max:5000'],
-            'monthly_price' => ['required', 'numeric', 'min:1', 'max:999.99'],
-            'allow_tips' => ['nullable', 'boolean'],
-            'avatar' => ['nullable', 'image', 'max:4096'],
-            'banner' => ['nullable', 'image', 'max:6144'],
+    public function store(StorePostRequest $request)
+    {
+        $data = $request->validated();
+
+        $post = auth()->user()->posts()->create([
+            'caption' => $data['caption'] ?? null,
+            'is_locked' => $request->boolean('is_locked'),
+            'is_published' => $request->boolean('is_published', true),
+            'published_at' => $request->boolean('is_published', true) ? now() : null,
         ]);
 
-        if ($request->hasFile('avatar')) {
-            if ($profile->avatar_path) {
-                Storage::disk('public')->delete($profile->avatar_path);
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $index => $file) {
+                $path = $file->store('posts', 'public');
+
+                PostMedia::create([
+                    'post_id' => $post->id,
+                    'file_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'media_type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
+                    'sort_order' => $index,
+                ]);
             }
-
-            $data['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
         }
-
-        if ($request->hasFile('banner')) {
-            if ($profile->banner_path) {
-                Storage::disk('public')->delete($profile->banner_path);
-            }
-
-            $data['banner_path'] = $request->file('banner')->store('banners', 'public');
-        }
-
-        $data['allow_tips'] = $request->boolean('allow_tips');
-
-        $profile->update($data);
 
         return redirect()
-            ->route('creator.profile.edit')
-            ->with('success', 'Profile updated successfully.');
+            ->route('creator.posts.index')
+            ->with('success', 'Post created successfully.');
+    }
+
+    public function edit(Post $post)
+    {
+        abort_unless($post->user_id === auth()->id(), 403);
+
+        $post->load('media');
+
+        return view('creator.posts.edit', compact('post'));
+    }
+
+    public function update(UpdatePostRequest $request, Post $post)
+    {
+        abort_unless($post->user_id === auth()->id(), 403);
+
+        $data = $request->validated();
+
+        $post->update([
+            'caption' => $data['caption'] ?? null,
+            'is_locked' => $request->boolean('is_locked'),
+            'is_published' => $request->boolean('is_published', true),
+            'published_at' => $request->boolean('is_published', true)
+                ? ($post->published_at ?? now())
+                : null,
+        ]);
+
+        if ($request->hasFile('media')) {
+            $currentCount = $post->media()->count();
+
+            foreach ($request->file('media') as $index => $file) {
+                $path = $file->store('posts', 'public');
+
+                PostMedia::create([
+                    'post_id' => $post->id,
+                    'file_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'media_type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
+                    'sort_order' => $currentCount + $index,
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('creator.posts.index')
+            ->with('success', 'Post updated successfully.');
+    }
+
+    public function destroy(Post $post)
+    {
+        abort_unless($post->user_id === auth()->id(), 403);
+
+        $post->load('media');
+
+        foreach ($post->media as $media) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        $post->delete();
+
+        return redirect()
+            ->route('creator.posts.index')
+            ->with('success', 'Post deleted.');
     }
 }
