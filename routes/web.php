@@ -6,6 +6,8 @@ use App\Http\Controllers\CreatorProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TipController;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Creator\DashboardController as CreatorDashboardController;
 use App\Http\Controllers\Creator\PostController;
 use App\Http\Controllers\Creator\ProfileController;
@@ -14,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/creators/{slug}', [CreatorProfileController::class, 'show'])->name('creators.show');
+
+Route::post('/stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -26,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tip/{creator:username}', [TipController::class, 'showCheckout'])->name('tips.checkout');
     Route::post('/tip/{creator:username}', [TipController::class, 'checkout'])->name('tips.store');
     Route::get('/tip/success', [TipController::class, 'success'])->name('tips.success');
+
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
 
     Route::prefix('creator')
         ->name('creator.')
