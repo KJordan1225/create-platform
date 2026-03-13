@@ -17,7 +17,10 @@ class CreatorProfileController extends Controller
                 'user.posts' => function ($query) {
                     $query->where('is_published', true)
                         ->latest()
-                        ->with('media');
+                        ->with([
+                            'media',
+                            'comments.user',
+                        ]);
                 }
             ])
             ->firstOrFail();
