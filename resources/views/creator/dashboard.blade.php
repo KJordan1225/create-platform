@@ -1,6 +1,51 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .btn-primary {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .btn-primary:hover {
+        color: #fff;
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+
+    .btn-primary:focus {
+        color: #fff;
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+        box-shadow: 0 0 0 0.25rem rgba(13,110,253,.5);
+    }
+
+    .btn-primary:active {
+        color: #fff;
+        background-color: #0a58ca;
+        border-color: #0a53be;
+    }
+
+    .btn-primary:disabled {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        opacity: 0.65;
+    }
+
+    .btn-blue-outline {
+        border: 1px solid #0d6efd;
+        color: #0d6efd;
+        background-color: transparent;
+    }
+
+    .btn-blue-outline:hover {
+        background-color: #0d6efd;
+        color: #ffffff;
+        border-color: #0d6efd;
+    }
+</style>
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
     <div>
         <h1 class="h2 mb-1">Creator Dashboard</h1>
@@ -9,7 +54,7 @@
 
     <div class="d-grid d-sm-flex gap-2">
         <a href="{{ route('creator.posts.create') }}" class="btn btn-primary">New Post</a>
-        <a href="{{ route('creator.profile.edit') }}" class="btn btn-outline-light">Edit Profile</a>
+        <a href="{{ route('creator.profile.edit') }}" class="btn btn-outline-light btn-blue-outline">Edit Profile</a>
     </div>
 </div>
 
