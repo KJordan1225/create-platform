@@ -8,25 +8,42 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        body {
+        /* body {
             background-color: #0f1115;
             color: #f5f7fa;
+        } */
+
+        body {
+            background-color: #f5f7fa;
+            color: #0f1115;
         }
 
-        .bg-panel {
+        /* .bg-panel {
             background: #181c23;
+            border: 1px solid rgba(255,255,255,.06);
+        } */
+        .bg-panel {
+            background: #f5f7fa;
             border: 1px solid rgba(255,255,255,.06);
         }
 
-        .creator-card,
-        .post-card {
+        /* .creator-card, */
+        /* .post-card {
             background: #181c23;
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 1rem;
+            overflow: hidden;
+        } */
+
+        .creator-card,    
+        .post-card {
+            background: #f5f7fa;
             border: 1px solid rgba(255,255,255,.06);
             border-radius: 1rem;
             overflow: hidden;
         }
 
-        .locked-overlay {
+        /* .locked-overlay {
             position: absolute;
             inset: 0;
             background: rgba(0,0,0,.55);
@@ -35,6 +52,19 @@
             align-items: center;
             justify-content: center;
             color: white;
+            text-align: center;
+            padding: 1rem;
+        } */
+
+        .locked-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,1);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
             text-align: center;
             padding: 1rem;
         }

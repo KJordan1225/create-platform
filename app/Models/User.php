@@ -57,12 +57,12 @@ class User extends Authenticatable
 
     public function outgoingSubscriptions()
     {
-        return $this->hasMany(Subscription::class, 'fan_id');
+        return $this->hasMany(Plf_subscription::class, 'fan_id');
     }
 
     public function incomingSubscriptions()
     {
-        return $this->hasMany(Subscription::class, 'creator_id');
+        return $this->hasMany(Plf_subscription::class, 'creator_id');
     }
 
     public function tipsSent()

@@ -3,119 +3,48 @@
 namespace App\Http\Controllers\Creator;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StorePostRequest;
-use App\Http\Requests\UpdatePostRequest;
-use App\Models\Post;
-use App\Models\PostMedia;
+use App\Http\Requests\UpdateCreatorProfileRequest;
 use Illuminate\Support\Facades\Storage;
 
-class PostController extends Controller
+class ProfileController extends Controller
 {
-    public function index()
+    public function edit()
     {
-        $posts = auth()->user()
-            ->posts()
-            ->with('media')
-            ->latest()
-            ->paginate(12);
+        $creator = auth()->user();
+        $profile = $creator->creatorProfile;
 
-        return view('creator.posts.index', compact('posts'));
+        return view('creator.profile.edit', compact('creator', 'profile'));
     }
 
-    public function create()
+    public function update(UpdateCreatorProfileRequest $request)
     {
-        return view('creator.posts.create');
-    }
-
-    public function store(StorePostRequest $request)
-    {
-        $data = $request->validated();
-
-        $post = auth()->user()->posts()->create([
-            'caption' => $data['caption'] ?? null,
-            'is_locked' => $request->boolean('is_locked'),
-            'is_published' => $request->boolean('is_published', true),
-            'published_at' => $request->boolean('is_published', true) ? now() : null,
-        ]);
-
-        if ($request->hasFile('media')) {
-            foreach ($request->file('media') as $index => $file) {
-                $path = $file->store('posts', 'public');
-
-                PostMedia::create([
-                    'post_id' => $post->id,
-                    'file_path' => $path,
-                    'mime_type' => $file->getMimeType(),
-                    'media_type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
-                    'sort_order' => $index,
-                ]);
-            }
-        }
-
-        return redirect()
-            ->route('creator.posts.index')
-            ->with('success', 'Post created successfully.');
-    }
-
-    public function edit(Post $post)
-    {
-        abort_unless($post->user_id === auth()->id(), 403);
-
-        $post->load('media');
-
-        return view('creator.posts.edit', compact('post'));
-    }
-
-    public function update(UpdatePostRequest $request, Post $post)
-    {
-        abort_unless($post->user_id === auth()->id(), 403);
+        $creator = auth()->user();
+        $profile = $creator->creatorProfile;
 
         $data = $request->validated();
 
-        $post->update([
-            'caption' => $data['caption'] ?? null,
-            'is_locked' => $request->boolean('is_locked'),
-            'is_published' => $request->boolean('is_published', true),
-            'published_at' => $request->boolean('is_published', true)
-                ? ($post->published_at ?? now())
-                : null,
-        ]);
-
-        if ($request->hasFile('media')) {
-            $currentCount = $post->media()->count();
-
-            foreach ($request->file('media') as $index => $file) {
-                $path = $file->store('posts', 'public');
-
-                PostMedia::create([
-                    'post_id' => $post->id,
-                    'file_path' => $path,
-                    'mime_type' => $file->getMimeType(),
-                    'media_type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
-                    'sort_order' => $currentCount + $index,
-                ]);
+        if ($request->hasFile('avatar')) {
+            if ($profile->avatar_path) {
+                Storage::disk('public')->delete($profile->avatar_path);
             }
+
+            $data['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        return redirect()
-            ->route('creator.posts.index')
-            ->with('success', 'Post updated successfully.');
-    }
+        if ($request->hasFile('banner')) {
+            if ($profile->banner_path) {
+                Storage::disk('public')->delete($profile->banner_path);
+            }
 
-    public function destroy(Post $post)
-    {
-        abort_unless($post->user_id === auth()->id(), 403);
-
-        $post->load('media');
-
-        foreach ($post->media as $media) {
-            Storage::disk('public')->delete($media->file_path);
+            $data['banner_path'] = $request->file('banner')->store('banners', 'public');
         }
 
-        $post->delete();
+        $data['allow_tips'] = $request->boolean('allow_tips');
+
+        $profile->update($data);
 
         return redirect()
-            ->route('creator.posts.index')
-            ->with('success', 'Post deleted.');
+            ->route('creator.profile.edit')
+            ->with('success', 'Profile updated successfully.');
     }
 }
