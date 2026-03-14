@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Creator;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateCreatorProfileRequest;
+use App\Services\StripeCreatorBillingService;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
@@ -16,7 +17,7 @@ class ProfileController extends Controller
         return view('creator.profile.edit', compact('creator', 'profile'));
     }
 
-    public function update(UpdateCreatorProfileRequest $request)
+    public function update(UpdateCreatorProfileRequest $request, StripeCreatorBillingService $billingService)
     {
         $creator = auth()->user();
         $profile = $creator->creatorProfile;
@@ -42,6 +43,10 @@ class ProfileController extends Controller
         $data['allow_tips'] = $request->boolean('allow_tips');
 
         $profile->update($data);
+
+        if ($creator->creator_approved_at) {
+            $billingService->syncCreatorSubscriptionPrice($profile->fresh());
+        }
 
         return redirect()
             ->route('creator.profile.edit')

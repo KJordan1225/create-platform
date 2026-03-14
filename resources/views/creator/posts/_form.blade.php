@@ -40,10 +40,20 @@
                             @else
                                 <img src="{{ $media->url }}" class="w-100" style="height: 180px; object-fit: cover;" alt="">
                             @endif
+
+                            <div class="p-2">
+                                <form method="POST" action="{{ route('creator.posts.media.destroy', [$post, $media]) }}"
+                                    onsubmit="return confirm('Remove this media item?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-sm btn-outline-danger w-100">Remove</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
         </div>
     @endif
+
 </div>

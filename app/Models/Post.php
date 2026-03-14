@@ -42,25 +42,4 @@ class Post extends Model
             ->where('is_visible', true)
             ->latest();
     }
-
-    public function canBeViewedBy(?User $viewer): bool
-    {
-        if (! $this->is_locked) {
-            return true;
-        }
-
-        if (! $viewer) {
-            return false;
-        }
-
-        if ($viewer->id === $this->user_id) {
-            return true;
-        }
-
-        if ($viewer->isAdmin()) {
-            return true;
-        }
-
-        return $viewer->hasActiveSubscriptionTo($this->user);
-    }
 }

@@ -122,4 +122,16 @@ class PostController extends Controller
             ->route('creator.posts.index')
             ->with('success', 'Post deleted.');
     }
+
+    public function destroyMedia(Post $post, \App\Models\PostMedia $media)
+    {
+        abort_unless($post->user_id === auth()->id(), 403);
+        abort_unless($media->post_id === $post->id, 404);
+
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($media->file_path);
+        $media->delete();
+
+        return back()->with('success', 'Media removed successfully.');
+    }
+
 }

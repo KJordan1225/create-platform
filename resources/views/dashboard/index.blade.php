@@ -6,6 +6,17 @@
     <p class="text-secondary mb-0">Manage your subscriptions and recent support activity.</p>
 </div>
 
+<div class="mb-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+    <div>
+        <h1 class="h2 mb-1">Fan Dashboard</h1>
+        <p class="text-secondary mb-0">Manage your subscriptions and recent support activity.</p>
+    </div>
+
+    @if(!auth()->user()->is_creator)
+        <a href="{{ route('creator.apply') }}" class="btn btn-primary">Become a Creator</a>
+    @endif
+</div>
+
 <div class="row g-4">
     <div class="col-12 col-xl-7">
         <div class="bg-panel rounded-4 p-3 p-md-4 h-100">
