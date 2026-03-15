@@ -97,4 +97,35 @@ class User extends Authenticatable
             ->where('status', 'active')
             ->exists();
     }
+
+    public function creatorConversations()
+    {
+        return $this->hasMany(Conversation::class, 'creator_id');
+    }
+
+    public function fanConversations()
+    {
+        return $this->hasMany(Conversation::class, 'fan_id');
+    }
+
+    public function allConversations()
+    {
+        if ($this->isCreator()) {
+            return Conversation::query()->where('creator_id', $this->id);
+        }
+
+        return Conversation::query()->where('fan_id', $this->id);
+    }
+
+    public function unreadMessagesCount(): int
+    {
+        $conversationIds = $this->allConversations()->pluck('id');
+
+        return Message::query()
+            ->whereIn('conversation_id', $conversationIds)
+            ->whereNull('read_at')
+            ->where('sender_id', '!=', $this->id)
+            ->count();
+    }
+
 }

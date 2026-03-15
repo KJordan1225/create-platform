@@ -84,8 +84,8 @@
         }
 
         .media-thumb {
-            width: 100%;
-            height: 280px;
+            width: 480px;
+            height: 480px;
             object-fit: cover;
         }
 
