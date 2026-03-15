@@ -14,6 +14,7 @@ class ExploreController extends Controller
         $creators = User::query()
             ->where('role', 'creator')
             ->where('is_creator', true)
+            ->where('is_active', true)
             ->whereNotNull('creator_approved_at')
             ->whereHas('creatorProfile', function ($query) use ($search) {
                 $query->where('is_published', true);

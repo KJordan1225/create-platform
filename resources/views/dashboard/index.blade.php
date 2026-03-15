@@ -1,11 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mb-4">
-    <h1 class="h2 mb-1">Fan Dashboard</h1>
-    <p class="text-secondary mb-0">Manage your subscriptions and recent support activity.</p>
-</div>
-
 <div class="mb-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
     <div>
         <h1 class="h2 mb-1">Fan Dashboard</h1>

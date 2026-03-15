@@ -11,6 +11,7 @@ class HomeController extends Controller
         $featuredCreators = User::query()
             ->where('role', 'creator')
             ->where('is_creator', true)
+            ->where('is_active', true)
             ->whereNotNull('creator_approved_at')
             ->whereHas('creatorProfile', fn ($q) => $q->where('is_published', true))
             ->with('creatorProfile')

@@ -41,6 +41,19 @@
                 @else
                     <a href="{{ route('login') }}" class="btn btn-primary w-100">Login to Subscribe</a>
                 @endauth
+
+                @auth
+                    @if(auth()->id() !== $creator->id)
+                        <form method="POST" action="{{ route('reports.store') }}" class="mt-2">
+                            @csrf
+                            <input type="hidden" name="reportable_type" value="creator">
+                            <input type="hidden" name="reportable_id" value="{{ $profile->id }}">
+                            <input type="hidden" name="reason" value="Creator profile review requested">
+                            <button class="btn btn-sm btn-outline-warning">Report Creator</button>
+                        </form>
+                    @endif
+                @endauth
+
             </div>
         </div>
     </div>

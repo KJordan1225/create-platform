@@ -83,6 +83,17 @@ class SubscriptionController extends Controller
             ->where('creator_id', $creator->id)
             ->firstOrFail();
 
+        if ($subscription->stripe_subscription_id) {
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+            try {
+                $stripeSubscription = \Stripe\Subscription::retrieve($subscription->stripe_subscription_id);
+                $stripeSubscription->cancel();
+            } catch (\Throwable $e) {
+                // keep going so local state can still be updated
+            }
+        }
+
         $subscription->update([
             'status' => 'canceled',
             'canceled_at' => now(),
@@ -91,4 +102,5 @@ class SubscriptionController extends Controller
 
         return back()->with('success', 'Subscription canceled.');
     }
+
 }
