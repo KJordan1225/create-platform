@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\StripeCreatorBillingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use App\Mail\CreatorApprovedMail;
+use Illuminate\Support\Facades\Mail;
 
 class CreatorManagementController extends Controller
 {
@@ -45,6 +47,8 @@ class CreatorManagementController extends Controller
         ]);
 
         $billingService->syncCreatorSubscriptionPrice($user->creatorProfile);
+
+        Mail::to($user->email)->queue(new CreatorApprovedMail($user));
 
         return back()->with('success', 'Creator approved successfully.');
     }

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewSubscriberMail;
 use App\Models\Plf_subscription;
 use App\Models\Tip;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 
@@ -48,10 +50,13 @@ class StripeWebhookController extends Controller
         $type = $metadata['type'] ?? null;
 
         if ($type === 'creator_subscription') {
-            Plf_subscription::query()
+            $subscription = Plf_subscription::query()
                 ->where('fan_id', $metadata['fan_id'] ?? null)
                 ->where('creator_id', $metadata['creator_id'] ?? null)
-                ->update([
+                ->first();
+
+            if ($subscription) {
+                $subscription->update([
                     'stripe_subscription_id' => $session->subscription ?? null,
                     'stripe_checkout_session_id' => $session->id ?? null,
                     'status' => 'active',
@@ -59,6 +64,13 @@ class StripeWebhookController extends Controller
                     'ends_at' => null,
                     'canceled_at' => null,
                 ]);
+
+                $subscription->load(['creator', 'fan']);
+
+                if ($subscription->creator?->email) {
+                    Mail::to($subscription->creator->email)->queue(new NewSubscriberMail($subscription));
+                }
+            }
         }
 
         if ($type === 'creator_tip') {
