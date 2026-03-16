@@ -71,6 +71,28 @@
                         </a>
                     </li>
 
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('feed.index') }}">Feed</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('messages.index') }}">
+                            Messages
+                            @if(auth()->user()->unreadMessagesCount() > 0)
+                                <span class="badge text-bg-primary">{{ auth()->user()->unreadMessagesCount() }}</span>
+                            @endif
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('notifications.index') }}">
+                            Notifications
+                            @if(auth()->user()->unreadNotifications()->count() > 0)
+                                <span class="badge text-bg-warning">{{ auth()->user()->unreadNotifications()->count() }}</span>
+                            @endif
+                        </a>
+                    </li>
+
                     @if(auth()->user()->isApprovedCreator())
                         <li class="nav-item">
                             <a class="nav-link btn-primary" href="{{ route('creator.dashboard') }}">

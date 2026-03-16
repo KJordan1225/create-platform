@@ -10,6 +10,8 @@ use Illuminate\Support\ServiceProvider;
 use App\Models\Post;
 use App\Policies\PostPolicy;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Conversation;
+use App\Policies\ConversationPolicy;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -36,5 +38,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::policy(Post::class, PostPolicy::class);
+        Gate::policy(Conversation::class, ConversationPolicy::class);
     }
 }
