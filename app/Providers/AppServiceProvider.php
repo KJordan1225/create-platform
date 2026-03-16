@@ -37,6 +37,13 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('messages', function (Request $request) {
+            return [
+                Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()),
+            ];
+        });
+
+
         Gate::policy(Post::class, PostPolicy::class);
         Gate::policy(Conversation::class, ConversationPolicy::class);
     }

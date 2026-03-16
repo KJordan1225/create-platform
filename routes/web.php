@@ -114,6 +114,14 @@ Route::post('/subscribe/{creator:username}', [SubscriptionController::class, 'ch
 Route::post('/tip/{creator:username}', [TipController::class, 'checkout'])
     ->middleware('throttle:payments')
     ->name('tips.store');
+
+Route::post('/messages/start/{creator:username}', [MessageController::class, 'start'])
+    ->middleware('throttle:messages')
+    ->name('messages.start');
+
+Route::post('/messages/{conversation}', [MessageController::class, 'store'])
+    ->middleware('throttle:messages')
+    ->name('messages.store');
 	
 
 

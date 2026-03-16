@@ -7,8 +7,13 @@
         <p class="text-secondary mb-0">Manage creators, subscriptions, and platform health.</p>
     </div>
 
-    <a href="{{ route('admin.creators.index') }}" class="btn btn-primary">Manage Creators</a>
+    <div class="d-grid d-sm-flex gap-2">
+        <a href="{{ route('admin.creators.index') }}" class="btn btn-primary">Manage Creators</a>
+        <a href="{{ route('admin.reports.index') }}" class="btn btn-outline-light">Review Reports</a>
+    </div>
 </div>
+
+
 
 <div class="row g-4 mb-4">
     <div class="col-6 col-md-4 col-xl-2">

@@ -6,10 +6,14 @@
         <h1 class="h2 mb-1">Fan Dashboard</h1>
         <p class="text-secondary mb-0">Manage your subscriptions and recent support activity.</p>
     </div>
-
-    @if(!auth()->user()->is_creator)
-        <a href="{{ route('creator.apply') }}" class="btn btn-primary">Become a Creator</a>
-    @endif
+    
+    <div class="d-grid d-sm-flex gap-2">
+        @if(!auth()->user()->is_creator)
+            <a href="{{ route('creator.apply') }}" class="btn btn-primary">Become a Creator</a>
+        @endif
+        <a href="{{ route('feed.index') }}" class="btn btn-outline-light">Open Feed</a>
+        <a href="{{ route('messages.index') }}" class="btn btn-outline-light">Messages</a>
+    </div>
 </div>
 
 <div class="row g-4">

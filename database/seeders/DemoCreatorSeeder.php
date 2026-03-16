@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Conversation;
 use App\Models\CreatorProfile;
+use App\Models\Message;
 use App\Models\Post;
 use App\Models\PostMedia;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DemoCreatorSeeder extends Seeder
 {
@@ -41,24 +42,30 @@ class DemoCreatorSeeder extends Seeder
         );
 
         for ($i = 1; $i <= 6; $i++) {
-            $post = Post::create([
-                'user_id' => $creator->id,
-                'caption' => 'Demo post #' . $i . ' with sample premium content preview.',
-                'is_locked' => $i % 2 === 0,
-                'is_published' => true,
-                'published_at' => now()->subDays($i),
-            ]);
+            $post = Post::firstOrCreate(
+                [
+                    'user_id' => $creator->id,
+                    'caption' => 'Demo post #' . $i . ' with sample premium content preview.',
+                ],
+                [
+                    'is_locked' => $i % 2 === 0,
+                    'is_published' => true,
+                    'published_at' => now()->subDays($i),
+                ]
+            );
 
-            PostMedia::create([
-                'post_id' => $post->id,
-                'file_path' => 'demo/demo-post-' . $i . '.jpg',
-                'mime_type' => 'image/jpeg',
-                'media_type' => 'image',
-                'sort_order' => 0,
-            ]);
+            if ($post->media()->count() === 0) {
+                PostMedia::create([
+                    'post_id' => $post->id,
+                    'file_path' => 'demo/demo-post-' . $i . '.jpg',
+                    'mime_type' => 'image/jpeg',
+                    'media_type' => 'image',
+                    'sort_order' => 0,
+                ]);
+            }
         }
 
-        User::firstOrCreate(
+        $fan = User::firstOrCreate(
             ['email' => 'fan@example.com'],
             [
                 'name' => 'Demo Fan',
@@ -70,5 +77,34 @@ class DemoCreatorSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        $conversation = Conversation::firstOrCreate(
+            [
+                'creator_id' => $creator->id,
+                'fan_id' => $fan->id,
+            ],
+            [
+                'last_message_at' => now(),
+            ]
+        );
+
+        if ($conversation->messages()->count() === 0) {
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $fan->id,
+                'body' => 'Hi, I really enjoy your content.',
+            ]);
+
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $creator->id,
+                'body' => 'Thank you so much for the support!',
+                'read_at' => now(),
+            ]);
+
+            $conversation->update([
+                'last_message_at' => now(),
+            ]);
+        }
     }
 }
