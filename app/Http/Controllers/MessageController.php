@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\MessagingService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Services\AbuseDetectionService;
 
 class MessageController extends Controller
 {
@@ -47,10 +48,22 @@ class MessageController extends Controller
         ]);
     }
 
-    public function start(StartConversationRequest $request, User $creator, MessagingService $messagingService)
+    public function start(
+        StartConversationRequest $request,
+        User $creator,
+        MessagingService $messagingService,
+        AbuseDetectionService $abuseDetectionService
+    ) 
+
     {
         abort_unless($creator->isApprovedCreator() && $creator->is_active, 404);
         abort_if($request->user()->id === $creator->id, 403, 'You cannot message yourself.');
+
+        if ($abuseDetectionService->isMessageSpam($request->user(), $request->validated('body'))) {
+            return back()->withErrors([
+                'body' => 'Your message was flagged as suspicious. Please revise and try again.',
+            ]);
+        }
 
         $conversation = $messagingService->startOrGetConversation($request->user(), $creator);
         $messagingService->sendMessage($conversation, $request->user(), $request->validated('body'));
@@ -60,12 +73,23 @@ class MessageController extends Controller
             ->with('success', 'Message sent successfully.');
     }
 
-    public function store(StoreMessageRequest $request, Conversation $conversation, MessagingService $messagingService)
-    {
+    public function store(
+        StoreMessageRequest $request,
+        Conversation $conversation,
+        MessagingService $messagingService,
+        AbuseDetectionService $abuseDetectionService
+    ) {
         $this->authorize('sendMessage', $conversation);
+
+        if ($abuseDetectionService->isMessageSpam($request->user(), $request->validated('body'))) {
+            return back()->withErrors([
+                'body' => 'Your message was flagged as suspicious. Please revise and try again.',
+            ]);
+        }
 
         $messagingService->sendMessage($conversation, $request->user(), $request->validated('body'));
 
         return back()->with('success', 'Reply sent successfully.');
     }
+
 }

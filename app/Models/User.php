@@ -128,4 +128,9 @@ class User extends Authenticatable
             ->count();
     }
 
+    public function payoutReports()
+    {
+        return $this->hasMany(PayoutReport::class, 'creator_id');
+    }
+
 }

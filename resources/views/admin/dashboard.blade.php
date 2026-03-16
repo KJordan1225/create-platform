@@ -10,6 +10,7 @@
     <div class="d-grid d-sm-flex gap-2">
         <a href="{{ route('admin.creators.index') }}" class="btn btn-primary">Manage Creators</a>
         <a href="{{ route('admin.reports.index') }}" class="btn btn-outline-light">Review Reports</a>
+        <a href="{{ route('admin.analytics.index') }}" class="btn btn-outline-light">Analytics</a>
     </div>
 </div>
 

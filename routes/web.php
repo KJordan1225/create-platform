@@ -22,6 +22,8 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ReportManagementController;
+use App\Http\Controllers\Creator\EarningsController;
+use App\Http\Controllers\Admin\AnalyticsController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
@@ -73,6 +75,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::delete('/posts/{post}/media/{media}', [PostController::class, 'destroyMedia'])->name('posts.media.destroy');
             Route::resource('posts', PostController::class);
+
+            Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
         });
 
     Route::prefix('admin')
@@ -90,6 +94,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 			Route::get('/reports', [ReportManagementController::class, 'index'])->name('reports.index');
 			Route::post('/reports/{report}/resolve', [ReportManagementController::class, 'resolve'])->name('reports.resolve');
 			Route::post('/reports/{report}/dismiss', [ReportManagementController::class, 'dismiss'])->name('reports.dismiss');
+
+            Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
         });
 });
 

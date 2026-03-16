@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCommentRequest;
 use App\Models\Comment;
 use App\Models\Post;
+use App\Services\AbuseDetectionService;
 
 class CommentController extends Controller
 {
-    public function store(StoreCommentRequest $request, Post $post)
+    public function store(StoreCommentRequest $request, Post $post, AbuseDetectionService $abuseDetectionService)
     {
         if (! $post->is_published) {
             abort(404);
+        }
+
+        if ($abuseDetectionService->isCommentSpam($request->user(), $request->validated('body'))) {
+            return back()->withErrors([
+                'body' => 'Your comment was flagged as suspicious. Please revise and try again.',
+            ]);
         }
 
         Comment::create([

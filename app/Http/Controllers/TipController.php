@@ -23,7 +23,7 @@ class TipController extends Controller
         return view('tips.checkout', compact('creator', 'profile'));
     }
 
-    public function checkout(CheckoutTipRequest $request, User $creator)
+    public function checkout(CheckoutTipRequest $request, User $creator, AbuseDetectionService $abuseDetectionService)
     {
         abort_unless($creator->isApprovedCreator(), 404);
 
@@ -42,6 +42,12 @@ class TipController extends Controller
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $amountInCents = (int) round($data['amount'] * 100);
+
+        if ($abuseDetectionService->isTipAbuse($fan, (float) $data['amount'])) {
+            return back()->withErrors([
+                'amount' => 'This tip pattern looks unusual. Please wait and try again later.',
+            ]);
+        }
 
         $session = Session::create([
             'mode' => 'payment',
