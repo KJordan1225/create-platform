@@ -27,6 +27,8 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\PostController as PublicPostController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\FanSubscriptionController;
+use App\Http\Controllers\Admin\ModerationController;
+use Illuminate\Http\Request;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
@@ -106,6 +108,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 			Route::post('/reports/{report}/dismiss', [ReportManagementController::class, 'dismiss'])->name('reports.dismiss');
 
             Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+            Route::post('/moderation/posts/{post}/hide', [ModerationController::class, 'hidePost'])->name('moderation.posts.hide');
+            Route::post('/moderation/posts/{post}/publish', [ModerationController::class, 'publishPost'])->name('moderation.posts.publish');
+            Route::delete('/moderation/posts/{post}', [ModerationController::class, 'deletePost'])->name('moderation.posts.delete');
+
+            Route::post('/moderation/comments/{comment}/hide', [ModerationController::class, 'hideComment'])->name('moderation.comments.hide');
+            Route::post('/moderation/comments/{comment}/show', [ModerationController::class, 'showComment'])->name('moderation.comments.show');
+            Route::delete('/moderation/comments/{comment}', [ModerationController::class, 'deleteComment'])->name('moderation.comments.delete');
         });
 });
 

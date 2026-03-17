@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CreatorProfile;
-use App\Models\Subscription;
+use App\Models\Plf_subscription;
 use App\Models\Tip;
 use App\Models\User;
 use Illuminate\View\View;
@@ -18,7 +18,7 @@ class DashboardController extends Controller
             'creators_count' => User::where('role', 'creator')->count(),
             'approved_creators_count' => User::where('role', 'creator')->whereNotNull('creator_approved_at')->count(),
             'pending_creators_count' => User::where('role', 'creator')->whereNull('creator_approved_at')->count(),
-            'active_subscriptions_count' => Subscription::where('status', 'active')->count(),
+            'active_subscriptions_count' => Plf_subscription::where('status', 'active')->count(),
             'tips_total' => Tip::where('status', 'succeeded')->sum('amount'),
         ];
 

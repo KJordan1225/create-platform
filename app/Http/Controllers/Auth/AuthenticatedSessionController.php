@@ -28,7 +28,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($request->user()->isApprovedCreator()) {
+            return redirect()->intended(route('creator.dashboard'));
+        }
+
+        return redirect()->intended(route('dashboard'));
     }
 
     /**

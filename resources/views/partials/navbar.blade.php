@@ -112,6 +112,10 @@
                     </li>
 
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ route('settings.edit') }}">Settings</a>
+                    </li>
+
+                    <li class="nav-item">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button class="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0 btn-blue-outline" type="submit">

@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Starz') }}</title>
+    <link href="https://cdn.jsdelivr.net" rel="stylesheet" integrity="sha384-..." crossorigin="anonymous">
+
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

@@ -12,7 +12,7 @@ class EnsureUserIsCreator
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isApprovedCreator()) {
+        if (! $user || ! $user->isApprovedCreator() || ! $user->is_active) {
             abort(403, 'Creator access only.');
         }
 

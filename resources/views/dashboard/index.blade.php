@@ -6,6 +6,12 @@
         <h1 class="h2 mb-1">Fan Dashboard</h1>
         <p class="text-secondary mb-0">Manage your subscriptions and recent support activity.</p>
     </div>
+
+    @if(auth()->user()->is_creator && is_null(auth()->user()->creator_approved_at))
+        <div class="alert alert-warning">
+            Your creator application is pending approval. You’ll gain creator dashboard access once approved.
+        </div>
+    @endif`
     
     <div class="d-grid d-sm-flex gap-2">
         @if(!auth()->user()->is_creator)
