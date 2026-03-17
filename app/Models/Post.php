@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -41,26 +42,5 @@ class Post extends Model
         return $this->hasMany(Comment::class)
             ->where('is_visible', true)
             ->latest();
-    }
-
-    public function canBeViewedBy(?User $viewer): bool
-    {
-        if (! $this->is_locked) {
-            return true;
-        }
-
-        if (! $viewer) {
-            return false;
-        }
-
-        if ($viewer->id === $this->user_id) {
-            return true;
-        }
-
-        if ($viewer->isAdmin()) {
-            return true;
-        }
-
-        return $viewer->hasActiveSubscriptionTo($this->user);
     }
 }

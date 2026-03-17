@@ -24,12 +24,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ReportManagementController;
 use App\Http\Controllers\Creator\EarningsController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\PostController as PublicPostController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\FanSubscriptionController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/creators/{slug}', [CreatorProfileController::class, 'show'])->name('creators.show');
 
 Route::post('/stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
+
+Route::get('/post/{post}', [PublicPostController::class, 'show'])->name('posts.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -63,6 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read_all');
+
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    Route::get('/subscriptions', [FanSubscriptionController::class, 'index'])->name('subscriptions.index');
 
     Route::prefix('creator')
         ->name('creator.')

@@ -108,9 +108,13 @@
                     @endif
 
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ route('subscriptions.index') }}">Subscriptions</a>
+                    </li>
+
+                    <li class="nav-item">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                           / <button class="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0 btn-blue-outline" type="submit">
+                            <button class="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0 btn-blue-outline" type="submit">
                                 Logout
                             </button>
                         </form>

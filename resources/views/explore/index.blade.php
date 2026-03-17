@@ -7,12 +7,26 @@
         <p class="text-secondary mb-0">Find creators and unlock premium content.</p>
     </div>
 
-    <form method="GET" action="{{ route('explore.index') }}" class="w-100 w-lg-auto">
-        <div class="input-group">
-            <input type="text" name="search" class="form-control" placeholder="Search creators..." value="{{ $search }}">
-            <button class="btn btn-primary">Search</button>
+    <form method="GET" action="{{ route('explore.index') }}" class="w-100">
+        <div class="row g-2">
+            <div class="col-12 col-lg-5">
+                <input type="text" name="search" class="form-control" placeholder="Search creators..." value="{{ $search }}">
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <input type="number" name="max_price" step="0.01" min="1" class="form-control" placeholder="Max monthly price" value="{{ $maxPrice }}">
+            </div>
+            <div class="col-12 col-md-6 col-lg-2 d-flex align-items-center">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="tips_only" value="1" id="tips_only" {{ $tipsOnly ? 'checked' : '' }}>
+                    <label class="form-check-label" for="tips_only">Tips only</label>
+                </div>
+            </div>
+            <div class="col-12 col-lg-2">
+                <button class="btn btn-primary w-100">Filter</button>
+            </div>
         </div>
     </form>
+
 </div>
 
 <div class="row g-4">
