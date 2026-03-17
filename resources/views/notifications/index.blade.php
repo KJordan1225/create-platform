@@ -9,7 +9,7 @@
 
     <form method="POST" action="{{ route('notifications.read_all') }}">
         @csrf
-        <button class="btn btn-outline-light">Mark All Read</button>
+        <button class="btn btn-primary">Mark All Read</button>
     </form>
 </div>
 
@@ -36,7 +36,7 @@
 
             @if(($notification->data['type'] ?? null) === 'new_message' && !empty($notification->data['conversation_id']))
                 <div class="mt-3">
-                    <a href="{{ route('messages.show', $notification->data['conversation_id']) }}" class="btn btn-sm btn-outline-light">
+                    <a href="{{ route('messages.show', $notification->data['conversation_id']) }}" class="btn btn-sm btn-primary">
                         Open Conversation
                     </a>
                 </div>

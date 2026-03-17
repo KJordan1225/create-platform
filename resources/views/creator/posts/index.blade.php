@@ -40,7 +40,7 @@
                     <p class="mb-3">{{ \Illuminate\Support\Str::limit($post->caption, 120) }}</p>
 
                     <div class="d-grid gap-2">
-                        <a href="{{ route('creator.posts.edit', $post) }}" class="btn btn-outline-light">Edit</a>
+                        <a href="{{ route('creator.posts.edit', $post) }}" class="btn btn-primary">Edit</a>
 
                         <form method="POST" action="{{ route('creator.posts.destroy', $post) }}"
                               onsubmit="return confirm('Delete this post?')">

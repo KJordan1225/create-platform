@@ -9,8 +9,8 @@
 
     <div class="d-grid d-sm-flex gap-2">
         <a href="{{ route('admin.creators.index') }}" class="btn btn-primary">Manage Creators</a>
-        <a href="{{ route('admin.reports.index') }}" class="btn btn-outline-light">Review Reports</a>
-        <a href="{{ route('admin.analytics.index') }}" class="btn btn-outline-light">Analytics</a>
+        <a href="{{ route('admin.reports.index') }}" class="btn btn-primary">Review Reports</a>
+        <a href="{{ route('admin.analytics.index') }}" class="btn btn-primary">Analytics</a>
     </div>
 </div>
 
@@ -67,7 +67,7 @@
                 </div>
 
                 <div class="d-grid d-sm-flex gap-2">
-                    <a href="{{ route('admin.creators.show', $creator) }}" class="btn btn-outline-light btn-sm">Review</a>
+                    <a href="{{ route('admin.creators.show', $creator) }}" class="btn btn-primary btn-sm">Review</a>
                     <form method="POST" action="{{ route('admin.creators.approve', $creator) }}">
                         @csrf
                         <button class="btn btn-success btn-sm">Approve</button>

@@ -37,7 +37,7 @@
                         @csrf
                         <div class="input-group">
                             <input type="text" name="body" class="form-control" placeholder="Add a comment...">
-                            <button class="btn btn-outline-light">Comment</button>
+                            <button class="btn btn-primary">Comment</button>
                         </div>
                     </form>
 

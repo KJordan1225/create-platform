@@ -34,7 +34,7 @@
                                 <span class="badge text-bg-danger">Suspended</span>
                             @endif
 
-                            <a href="{{ route('admin.creators.show', $creator) }}" class="btn btn-outline-light btn-sm">View</a>
+                            <a href="{{ route('admin.creators.show', $creator) }}" class="btn btn-primary btn-sm">View</a>
                         </div>
                     </div>
                 </div>

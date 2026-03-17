@@ -11,7 +11,7 @@
         <div class="d-grid d-sm-flex gap-2">
             <a href="{{ route('explore.index') }}" class="btn btn-primary btn-lg">Explore Creators</a>
             @guest
-                <a href="{{ route('register') }}" class="btn btn-outline-light btn-lg">Create Account</a>
+                <a href="{{ route('register') }}" class="btn btn-primary btn-lg">Create Account</a>
             @endguest
         </div>
     </div>
@@ -51,7 +51,7 @@
 <section>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h3 mb-0">Featured Creators</h2>
-        <a href="{{ route('explore.index') }}" class="btn btn-outline-light btn-sm">View all</a>
+        <a href="{{ route('explore.index') }}" class="btn btn-primary btn-sm">View all</a>
     </div>
 
     <div class="row g-4">

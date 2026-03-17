@@ -19,7 +19,7 @@
 
                 <div class="mt-4">
                     <button class="btn btn-primary">Save Changes</button>
-                    <a href="{{ route('creator.posts.index') }}" class="btn btn-outline-light ms-2">Back</a>
+                    <a href="{{ route('creator.posts.index') }}" class="btn btn-primary ms-2">Back</a>
                 </div>
             </form>
         </div>

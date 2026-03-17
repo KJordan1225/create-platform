@@ -7,7 +7,7 @@
         <p class="text-secondary mb-0">Track subscription revenue, tips, and payout reports.</p>
     </div>
 
-    <a href="{{ route('creator.dashboard') }}" class="btn btn-outline-light">Back to Dashboard</a>
+    <a href="{{ route('creator.dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
 </div>
 
 <div class="row g-4 mb-4">

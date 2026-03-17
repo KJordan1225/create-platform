@@ -67,7 +67,7 @@
                     <button class="btn btn-primary w-100">Post Comment</button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="btn btn-outline-light w-100 mb-4">Login to Comment</a>
+                <a href="{{ route('login') }}" class="btn btn-primary w-100 mb-4">Login to Comment</a>
             @endauth
 
             @forelse($post->comments as $comment)
@@ -82,7 +82,7 @@
         </div>
 
         <div class="mt-3 d-grid gap-2">
-            <a href="{{ route('posts.show', $post) }}" class="btn btn-outline-light">View Post</a>
+            <a href="{{ route('posts.show', $post) }}" class="btn btn-primary">View Post</a>
         </div>
     </div>
 </div>

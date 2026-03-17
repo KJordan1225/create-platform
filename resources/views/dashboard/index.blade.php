@@ -17,8 +17,8 @@
         @if(!auth()->user()->is_creator)
             <a href="{{ route('creator.apply') }}" class="btn btn-primary">Become a Creator</a>
         @endif
-        <a href="{{ route('feed.index') }}" class="btn btn-outline-light">Open Feed</a>
-        <a href="{{ route('messages.index') }}" class="btn btn-outline-light">Messages</a>
+        <a href="{{ route('feed.index') }}" class="btn btn-primary">Open Feed</a>
+        <a href="{{ route('messages.index') }}" class="btn btn-primary">Messages</a>
     </div>
 </div>
 
@@ -40,7 +40,7 @@
 
                     <div class="text-md-end">
                         <div>${{ number_format($subscription->amount, 2) }}</div>
-                        <a href="{{ route('creators.show', $subscription->creator->creatorProfile->slug) }}" class="btn btn-sm btn-outline-light mt-2">
+                        <a href="{{ route('creators.show', $subscription->creator->creatorProfile->slug) }}" class="btn btn-sm btn-primary mt-2">
                             View Creator
                         </a>
                     </div>

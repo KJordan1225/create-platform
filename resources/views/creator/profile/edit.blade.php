@@ -67,7 +67,7 @@
 
                     <div class="col-12">
                         <button class="btn btn-primary">Save Profile</button>
-                        <a href="{{ route('creator.dashboard') }}" class="btn btn-outline-light ms-2">Back</a>
+                        <a href="{{ route('creator.dashboard') }}" class="btn btn-primary ms-2">Back</a>
                     </div>
                 </div>
             </form>

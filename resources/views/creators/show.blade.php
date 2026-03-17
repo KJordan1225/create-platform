@@ -33,7 +33,7 @@
                         @endif
 
                         @if($profile->allow_tips)
-                            <a href="{{ route('tips.checkout', $creator->username) }}" class="btn btn-outline-light w-100">
+                            <a href="{{ route('tips.checkout', $creator->username) }}" class="btn btn-primary w-100">
                                 Send Tip
                             </a>
                         @endif
@@ -42,7 +42,7 @@
                             <form method="POST" action="{{ route('messages.start', $creator->username) }}" class="d-grid gap-2 mt-2">
                                 @csrf
                                 <input type="hidden" name="body" value="Hi {{ $profile->display_name }}, I’d like to connect.">
-                                <button class="btn btn-outline-light w-100">Message Creator</button>
+                                <button class="btn btn-primary w-100">Message Creator</button>
                             </form>
                         @endif
                     @endif

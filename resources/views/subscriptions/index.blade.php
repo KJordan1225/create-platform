@@ -22,7 +22,7 @@
                 </div>
 
                 <div class="d-grid d-sm-flex gap-2">
-                    <a href="{{ route('creators.show', $subscription->creator->creatorProfile->slug) }}" class="btn btn-outline-light btn-sm">
+                    <a href="{{ route('creators.show', $subscription->creator->creatorProfile->slug) }}" class="btn btn-primary btn-sm">
                         View Creator
                     </a>
 

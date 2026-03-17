@@ -118,14 +118,14 @@
                     <li class="nav-item">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button class="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0 btn-blue-outline" type="submit">
+                            <button class="btn btn-primary btn-sm ms-lg-2 mt-2 mt-lg-0 btn-blue-outline" type="submit">
                                 Logout
                             </button>
                         </form>
                     </li>
                 @else
                     <li class="nav-item">
-                        <a class="btn btn-outline-light btn-sm me-2 mb-2 mb-lg-0" href="{{ route('login') }}">Login</a>
+                        <a class="btn btn-primary btn-sm me-2 mb-2 mb-lg-0" href="{{ route('login') }}">Login</a>
                     </li>
                     <li class="nav-item">
                         <a class="btn btn-primary btn-sm" href="{{ route('register') }}">Join</a>

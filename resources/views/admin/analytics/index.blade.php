@@ -7,7 +7,7 @@
         <p class="text-secondary mb-0">Platform growth, creator performance, and engagement signals.</p>
     </div>
 
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-light">Back to Admin</a>
+    <a href="{{ route('admin.dashboard') }}" class="btn btn-primary">Back to Admin</a>
 </div>
 
 <div class="row g-4 mb-4">

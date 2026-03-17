@@ -29,7 +29,7 @@ class SubscriptionController extends Controller
 
         $profile = $creator->creatorProfile;
 
-        if (! $profile || ! $profile->stripe_price_id) {
+        if (!$profile || !$profile->stripe_price_id) {
             return back()->withErrors([
                 'subscription' => 'This creator is not ready for subscriptions yet.',
             ]);

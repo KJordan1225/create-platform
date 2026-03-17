@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <a href="{{ route('messages.index') }}" class="btn btn-outline-light btn-sm">Back to Inbox</a>
+    <a href="{{ route('messages.index') }}" class="btn btn-primary btn-sm">Back to Inbox</a>
 </div>
 
 <div class="bg-panel rounded-4 p-3 p-md-4">
