@@ -29,6 +29,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\FanSubscriptionController;
 use App\Http\Controllers\Admin\ModerationController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\HelpController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
@@ -149,6 +150,12 @@ Route::post('/messages/{conversation}', [MessageController::class, 'store'])
     ->middleware('throttle:messages')
     ->name('messages.store');
 	
+Route::prefix('help')->name('help.')->group(function () {
+    Route::get('/', [HelpController::class, 'index'])->name('index');
+    Route::get('/creator-guide', [HelpController::class, 'creatorGuide'])->name('creator');
+    Route::get('/fan-guide', [HelpController::class, 'fanGuide'])->name('fan');
+    Route::get('/admin-operations', [HelpController::class, 'adminGuide'])->name('admin');
+});
 
 
 require __DIR__.'/auth.php';

@@ -123,6 +123,23 @@
                             </button>
                         </form>
                     </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('help.index') }}">Help</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('help.creator') }}">Creator Guide</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('help.fan') }}">Fan Guide</a>
+                    </li>
+
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('help.admin') }}">Admin Guide</a>
+                        </li>
+                    @endif
                 @else
                     <li class="nav-item">
                         <a class="btn btn-primary btn-sm me-2 mb-2 mb-lg-0" href="{{ route('login') }}">Login</a>
