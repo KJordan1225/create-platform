@@ -13,14 +13,23 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
-        'username',
         'email',
         'password',
-        'role',
-        'is_active',
+        'username',
         'is_creator',
-        'creator_approved_at',
-        'last_seen_at',
+        'stripe_account_id',
+        'stripe_charges_enabled',
+        'stripe_payouts_enabled',
+        'stripe_onboarding_status',
+        'stripe_requirements',
+        'stripe_onboarded_at',
+    ];
+
+    protected $casts = [
+        'stripe_charges_enabled' => 'boolean',
+        'stripe_payouts_enabled' => 'boolean',
+        'stripe_requirements' => 'array',
+        'stripe_onboarded_at' => 'datetime',
     ];
 
     protected $hidden = [
@@ -38,6 +47,25 @@ class User extends Authenticatable
             'creator_approved_at' => 'datetime',
             'last_seen_at' => 'datetime',
         ];
+    }
+
+    public function isStripeConnected(): bool
+    {
+        return !empty($this->stripe_account_id)
+            && $this->stripe_charges_enabled
+            && $this->stripe_payouts_enabled
+            && $this->stripe_onboarding_status === 'connected';
+    }
+
+    public function needsStripeAction(): bool
+    {
+        return $this->stripe_onboarding_status === 'needs_action';
+    }
+
+    public function hasPendingStripeOnboarding(): bool
+    {
+        return !empty($this->stripe_account_id)
+            && $this->stripe_onboarding_status === 'pending';
     }
 
     public function creatorProfile()

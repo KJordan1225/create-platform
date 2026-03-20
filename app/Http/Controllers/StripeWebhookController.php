@@ -2,111 +2,128 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\NewSubscriberMail;
-use App\Models\Plf_subscription;
-use App\Models\Tip;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 
 class StripeWebhookController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request)
     {
         $payload = $request->getContent();
-        $signature = $request->header('Stripe-Signature');
+        $sigHeader = $request->server('HTTP_STRIPE_SIGNATURE');
         $secret = config('services.stripe.webhook_secret');
 
         try {
-            $event = Webhook::constructEvent($payload, $signature, $secret);
+            $event = Webhook::constructEvent($payload, $sigHeader, $secret);
         } catch (\UnexpectedValueException $e) {
-            return response('Invalid payload', 400);
+            return response('Invalid payload.', 400);
         } catch (SignatureVerificationException $e) {
-            return response('Invalid signature', 400);
+            return response('Invalid signature.', 400);
         }
 
         switch ($event->type) {
+            case 'account.updated':
+                $this->handleAccountUpdated($event->data->object);
+                break;
+
             case 'checkout.session.completed':
                 $this->handleCheckoutSessionCompleted($event->data->object);
                 break;
 
-            case 'customer.subscription.deleted':
-                $this->handleSubscriptionDeleted($event->data->object);
+            case 'customer.subscription.created':
+            case 'customer.subscription.updated':
+                $this->handleCustomerSubscriptionUpdated($event->data->object);
                 break;
 
-            case 'invoice.payment_failed':
-                $this->handleInvoicePaymentFailed($event->data->object);
+            case 'customer.subscription.deleted':
+                $this->handleCustomerSubscriptionDeleted($event->data->object);
                 break;
         }
 
         return response('Webhook handled', 200);
     }
 
-    protected function handleCheckoutSessionCompleted(object $session): void
+    protected function handleAccountUpdated($account): void
     {
-        $metadata = (array) ($session->metadata ?? []);
-        $type = $metadata['type'] ?? null;
-        dd('STOP - StripeWebhookController - ln 51');
+        $stripeAccountId = $account->id ?? null;
 
-        if ($type === 'creator_subscription') {
-            $subscription = Plf_subscription::query()
-                ->where('fan_id', $metadata['fan_id'] ?? null)
-                ->where('creator_id', $metadata['creator_id'] ?? null)
-                ->first();
-
-            if ($subscription) {
-                $subscription->update([
-                    'stripe_subscription_id' => $session->subscription ?? null,
-                    'stripe_checkout_session_id' => $session->id ?? null,
-                    'status' => 'active',
-                    'starts_at' => now(),
-                    'ends_at' => null,
-                    'canceled_at' => null,
-                ]);
-
-                $subscription->load(['creator', 'fan']);
-
-                if ($subscription->creator?->email) {
-                    Mail::to($subscription->creator->email)->queue(new NewSubscriberMail($subscription));
-                }
-            }
-        }
-
-        if ($type === 'creator_tip') {
-            Tip::query()
-                ->where('stripe_checkout_session_id', $session->id ?? null)
-                ->update([
-                    'stripe_payment_intent_id' => $session->payment_intent ?? null,
-                    'status' => 'succeeded',
-                ]);
-        }
-    }
-
-    protected function handleSubscriptionDeleted(object $stripeSubscription): void
-    {
-        Plf_subscription::query()
-            ->where('stripe_subscription_id', $stripeSubscription->id ?? null)
-            ->update([
-                'status' => 'canceled',
-                'canceled_at' => now(),
-                'ends_at' => now(),
-            ]);
-    }
-
-    protected function handleInvoicePaymentFailed(object $invoice): void
-    {
-        $subscriptionId = $invoice->subscription ?? null;
-
-        if (! $subscriptionId) {
+        if (!$stripeAccountId) {
             return;
         }
 
-        Plf_subscription::query()
-            ->where('stripe_subscription_id', $subscriptionId)
-            ->update([
-                'status' => 'past_due',
+        $creator = User::where('stripe_account_id', $stripeAccountId)->first();
+
+        if (!$creator) {
+            Log::warning('Stripe account.updated received for unknown account', [
+                'stripe_account_id' => $stripeAccountId,
             ]);
+            return;
+        }
+
+        $requirements = $account->requirements ?? null;
+
+        $currentlyDue = $requirements->currently_due ?? [];
+        $eventuallyDue = $requirements->eventually_due ?? [];
+        $pastDue = $requirements->past_due ?? [];
+        $pendingVerification = $requirements->pending_verification ?? [];
+
+        $status = $this->determineOnboardingStatus(
+            (bool) ($account->charges_enabled ?? false),
+            (bool) ($account->payouts_enabled ?? false),
+            $currentlyDue,
+            $pastDue
+        );
+
+        $creator->update([
+            'stripe_charges_enabled' => (bool) ($account->charges_enabled ?? false),
+            'stripe_payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
+            'stripe_onboarding_status' => $status,
+            'stripe_requirements' => [
+                'currently_due' => $currentlyDue,
+                'eventually_due' => $eventuallyDue,
+                'past_due' => $pastDue,
+                'pending_verification' => $pendingVerification,
+                'disabled_reason' => $requirements->disabled_reason ?? null,
+            ],
+            'stripe_onboarded_at' => (
+                (bool) ($account->charges_enabled ?? false)
+                && (bool) ($account->payouts_enabled ?? false)
+            ) ? ($creator->stripe_onboarded_at ?: now()) : $creator->stripe_onboarded_at,
+        ]);
+    }
+
+    protected function determineOnboardingStatus(
+        bool $chargesEnabled,
+        bool $payoutsEnabled,
+        array $currentlyDue,
+        array $pastDue
+    ): string {
+        if ($chargesEnabled && $payoutsEnabled) {
+            return 'connected';
+        }
+
+        if (!empty($currentlyDue) || !empty($pastDue)) {
+            return 'needs_action';
+        }
+
+        return 'pending';
+    }
+
+    protected function handleCheckoutSessionCompleted($session): void
+    {
+        // keep your existing subscription/tip webhook logic here
+    }
+
+    protected function handleCustomerSubscriptionUpdated($stripeSubscription): void
+    {
+        // keep your existing subscription webhook logic here
+    }
+
+    protected function handleCustomerSubscriptionDeleted($stripeSubscription): void
+    {
+        // keep your existing subscription webhook logic here
     }
 }

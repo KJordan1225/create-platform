@@ -30,6 +30,7 @@ use App\Http\Controllers\FanSubscriptionController;
 use App\Http\Controllers\Admin\ModerationController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\HelpController;
+use App\Http\Controllers\Creator\StripeConnectController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
@@ -76,6 +77,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 
     Route::get('/subscriptions', [FanSubscriptionController::class, 'index'])->name('subscriptions.index');
+
+    Route::get('/creator/settings/payouts', [StripeConnectController::class, 'settings'])
+        ->name('creator.settings.payouts');
+
+    Route::get('/creator/stripe/connect', [StripeConnectController::class, 'connect'])
+        ->name('creator.stripe.connect');
+
+    Route::get('/creator/stripe/refresh', [StripeConnectController::class, 'refresh'])
+        ->name('creator.stripe.refresh');
+
+    Route::get('/creator/stripe/return', [StripeConnectController::class, 'handleReturn'])
+        ->name('creator.stripe.return');
 
     Route::prefix('creator')
         ->name('creator.')

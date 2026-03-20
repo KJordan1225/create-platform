@@ -15,6 +15,17 @@ class TipController extends Controller
     {
         abort_unless($creator->isApprovedCreator(), 404);
 
+        if (
+            empty($creator->stripe_account_id) ||
+            !$creator->stripe_charges_enabled ||
+            !$creator->stripe_payouts_enabled ||
+            $creator->stripe_onboarding_status !== 'connected'
+        ) {
+            return back()->withErrors([
+                'subscription' => 'This creator is not ready to receive payouts yet.',
+            ]);
+        }
+
         $profile = $creator->creatorProfile;
 
         if (! $profile->allow_tips) {

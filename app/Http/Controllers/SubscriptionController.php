@@ -27,6 +27,17 @@ class SubscriptionController extends Controller
 
         abort_if($fan->id === $creator->id, 403, 'You cannot subscribe to yourself.');
 
+        if (
+            empty($creator->stripe_account_id) ||
+            !$creator->stripe_charges_enabled ||
+            !$creator->stripe_payouts_enabled ||
+            $creator->stripe_onboarding_status !== 'connected'
+        ) {
+            return back()->withErrors([
+                'subscription' => 'This creator is not ready to receive payouts yet.',
+            ]);
+        }
+
         $profile = $creator->creatorProfile;
 
         if (!$profile || !$profile->stripe_price_id) {

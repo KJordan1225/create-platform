@@ -61,6 +61,30 @@
     </div>
 </div>
 
+<div class="mb-3">
+    @include('creator.partials.stripe-status-badge', ['creator' => auth()->user()])
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 mb-3">
+    <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold">Payout Status</div>
+                <div class="text-muted small">Stripe onboarding and account readiness</div>
+            </div>
+            @include('creator.partials.stripe-status-badge', ['creator' => auth()->user()])
+        </div>
+
+        @if(!auth()->user()->isStripeConnected())
+            <div class="mt-3 d-grid d-md-flex">
+                <a href="{{ route('creator.settings.payouts') }}" class="btn btn-outline-primary rounded-3">
+                    Manage Payout Setup
+                </a>
+            </div>
+        @endif
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
         <div class="bg-panel rounded-4 p-4 h-100">
