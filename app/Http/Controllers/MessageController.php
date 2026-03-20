@@ -10,9 +10,11 @@ use App\Services\MessagingService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Services\AbuseDetectionService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class MessageController extends Controller
 {
+    use AuthorizesRequests;
     public function index(Request $request): View
     {
         $user = $request->user();

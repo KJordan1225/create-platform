@@ -90,6 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('posts', PostController::class);
 
             Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
+            Route::get('/creator/posts', [PostController::class, 'index'])->name('creator.posts.index');
         });
 
     Route::prefix('admin')

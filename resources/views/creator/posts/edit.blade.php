@@ -18,10 +18,22 @@
                 @include('creator.posts._form')
 
                 <div class="mt-4">
-                    <button class="btn btn-primary">Save Changes</button>
+                    <button class="btn btn-primary" type="submit">Save Changes</button>
                     <a href="{{ route('creator.posts.index') }}" class="btn btn-primary ms-2">Back</a>
                 </div>
             </form>
+
+            @if($post->exists && $post->media->count())
+                @foreach($post->media as $media)
+                    <form id="delete-media-{{ $media->id }}"
+                          method="POST"
+                          action="{{ route('creator.posts.media.destroy', [$post, $media]) }}"
+                          class="d-none">
+                        @csrf
+                        @method('DELETE')
+                    </form>
+                @endforeach
+            @endif
         </div>
     </div>
 </div>

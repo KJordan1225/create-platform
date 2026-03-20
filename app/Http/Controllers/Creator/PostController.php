@@ -76,28 +76,71 @@ class PostController extends Controller
     public function update(UpdatePostRequest $request, Post $post)
     {
         $this->authorize('update', $post);
+        abort_unless($post->user_id === auth()->id(), 403);
 
-        // rest unchanged
+        $data = $request->validated();
+
+        $post->update([
+            'caption' => $data['caption'] ?? null,
+            'is_locked' => $request->boolean('is_locked'),
+            'is_published' => $request->boolean('is_published', true),
+            'published_at' => $request->boolean('is_published', true)
+                ? ($post->published_at ?? now())
+                : null,
+        ]);
+
+        if ($request->hasFile('media')) {
+            $currentCount = $post->media()->count();
+
+            foreach ($request->file('media') as $index => $file) {
+                $path = $file->store('posts', 'public');
+
+                PostMedia::create([
+                    'post_id' => $post->id,
+                    'file_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'media_type' => str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image',
+                    'sort_order' => $currentCount + $index,
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('creator.posts.index')
+            ->with('success', 'Post updated successfully.');
     }
 
     public function destroy(Post $post)
     {
         $this->authorize('delete', $post);
 
-        // rest unchanged
-    }
+        abort_unless($post->user_id === auth()->id(), 403);
+
+        $post->load('media');
+
+        foreach ($post->media as $media) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        $post->delete();
+
+        return redirect()
+            ->route('creator.posts.index')
+            ->with('success', 'Post deleted.');
+    }    
 
     public function destroyMedia(Post $post, \App\Models\PostMedia $media)
     {
-        
-        $this->authorize('deleteMedia', $post);
+        // $this->authorize('deleteMedia', $post);
         abort_unless($post->user_id === auth()->id(), 403);
         abort_unless($media->post_id === $post->id, 404);
 
         Storage::disk('public')->delete($media->file_path);
         $media->delete();
 
-        return back()->with('success', 'Media removed successfully.');
+        return redirect()
+            ->route('creator.posts.edit', $post)
+            ->with('success', 'Media removed successfully.');
     }
 
 

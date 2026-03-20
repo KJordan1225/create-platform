@@ -54,6 +54,7 @@
 
     <div class="d-grid d-sm-flex gap-2">
         <a href="{{ route('creator.posts.create') }}" class="btn btn-primary">New Post</a>
+        <a href="{{ route('creator.posts.index') }}" class="btn btn-primary">Manage Posts</a>
         <a href="{{ route('creator.profile.edit') }}" class="btn btn-primary">Edit Profile</a>
         <a href="{{ route('creator.earnings.index') }}" class="btn btn-primary">Earnings</a>
         <a href="{{ route('messages.index') }}" class="btn btn-primary">Inbox</a>

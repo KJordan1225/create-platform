@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    @if(!empty($post) && $post->exists && $post->media->count())
+    @if($post->exists && $post->media->count())
         <div class="col-12">
             <label class="form-label">Existing Media</label>
             <div class="row g-3">
@@ -42,16 +42,12 @@
                             @endif
 
                             <div class="p-2">
-                                <form method="POST"
-                                    action="{{ route('creator.posts.media.destroy', [$post, $media]) }}"
-                                    onsubmit="return confirmDelete(event, this)">
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
-                                        Remove
-                                    </button>
-                                </form>
+                                <button type="submit"
+                                        form="delete-media-{{ $media->id }}"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Remove this media item?')">
+                                    Remove
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -59,5 +55,4 @@
             </div>
         </div>
     @endif
-
 </div>
