@@ -40,11 +40,11 @@ class CreatorManagementController extends Controller
             'is_active' => true,
             'is_creator' => true,
             'creator_approved_at' => now(),
-        ]);
+        ]);        
 
         $user->creatorProfile->update([
             'is_published' => true,
-        ]);
+        ]);      
 
         $billingService->syncCreatorSubscriptionPrice($user->creatorProfile);
 

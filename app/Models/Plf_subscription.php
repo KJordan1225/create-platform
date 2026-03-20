@@ -9,20 +9,7 @@ class Plf_subscription extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'fan_id',
-        'creator_id',
-        'stripe_checkout_session_id',
-        'stripe_subscription_id',
-        'stripe_customer_id',
-        'stripe_account_destination',
-        'application_fee_percent',
-        'amount',
-        'currency',
-        'status',
-        'subscribed_at',
-        'canceled_at',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'amount' => 'decimal:2',

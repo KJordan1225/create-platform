@@ -9,21 +9,7 @@ class Tip extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'fan_id',
-        'creator_id',
-        'amount',
-        'currency',
-        'stripe_checkout_session_id',
-        'stripe_payment_intent_id',
-        'stripe_charge_id',
-        'stripe_account_destination',
-        'application_fee_amount',
-        'application_fee_percent',
-        'status',
-        'message',
-        'paid_at',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'amount' => 'decimal:2',

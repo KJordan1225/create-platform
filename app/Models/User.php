@@ -11,19 +11,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, Billable;
 
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'username',
-        'is_creator',
-        'stripe_account_id',
-        'stripe_charges_enabled',
-        'stripe_payouts_enabled',
-        'stripe_onboarding_status',
-        'stripe_requirements',
-        'stripe_onboarded_at',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'stripe_charges_enabled' => 'boolean',
