@@ -12,14 +12,23 @@ class Plf_subscription extends Model
     protected $fillable = [
         'fan_id',
         'creator_id',
-        'stripe_subscription_id',
         'stripe_checkout_session_id',
+        'stripe_subscription_id',
+        'stripe_customer_id',
+        'stripe_account_destination',
+        'application_fee_percent',
         'amount',
         'currency',
         'status',
-        'starts_at',
-        'ends_at',
+        'subscribed_at',
         'canceled_at',
+    ];
+
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'application_fee_percent' => 'decimal:2',
+        'subscribed_at' => 'datetime',
+        'canceled_at' => 'datetime',
     ];
 
     protected function casts(): array
@@ -47,4 +56,10 @@ class Plf_subscription extends Model
         return $this->status === 'active'
             && (is_null($this->ends_at) || $this->ends_at->isFuture());
     }
+
+    public function getCreatorNetAmountAttribute(): float
+    {
+        return round((float) $this->amount * 0.80, 2);
+    }
+    
 }

@@ -159,6 +159,26 @@ class User extends Authenticatable
     public function payoutReports()
     {
         return $this->hasMany(PayoutReport::class, 'creator_id');
+    }   
+
+    public function receivedSubscriptions()
+    {
+        return $this->hasMany(Plf_subscription::class, 'creator_id');
+    }
+
+    public function sentSubscriptions()
+    {
+        return $this->hasMany(Plf_subscription::class, 'fan_id');
+    }
+
+    public function receivedTips()
+    {
+        return $this->hasMany(Tip::class, 'creator_id');
+    }
+
+    public function sentTips()
+    {
+        return $this->hasMany(Tip::class, 'fan_id');
     }
 
 }

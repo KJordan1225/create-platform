@@ -14,18 +14,22 @@ class Tip extends Model
         'creator_id',
         'amount',
         'currency',
-        'stripe_payment_intent_id',
         'stripe_checkout_session_id',
+        'stripe_payment_intent_id',
+        'stripe_charge_id',
+        'stripe_account_destination',
+        'application_fee_amount',
+        'application_fee_percent',
         'status',
         'message',
+        'paid_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'application_fee_percent' => 'decimal:2',
+        'paid_at' => 'datetime',
+    ];
 
     public function fan()
     {
@@ -35,5 +39,10 @@ class Tip extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    public function getCreatorNetAmountAttribute(): float
+    {
+        return (float) $this->amount - ((float) $this->application_fee_amount / 100);
     }
 }

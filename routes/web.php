@@ -32,6 +32,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\Creator\StripeConnectController;
 
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/creators/{slug}', [CreatorProfileController::class, 'show'])->name('creators.show');

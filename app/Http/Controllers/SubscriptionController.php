@@ -46,20 +46,41 @@ class SubscriptionController extends Controller
             ]);
         }
 
+        if (empty($creator->stripe_account_id)) {
+            return back()->withErrors([
+                'subscription' => 'This creator is not connected for payouts yet.',
+            ]);
+        }
+
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $session = Session::create([
             'mode' => 'subscription',
             'customer_email' => $fan->email,
+
             'line_items' => [[
                 'price' => $profile->stripe_price_id,
                 'quantity' => 1,
             ]],
+
+            'subscription_data' => [
+                'application_fee_percent' => 20,
+                'transfer_data' => [
+                    'destination' => $creator->stripe_account_id,
+                ],
+                'metadata' => [
+                    'fan_id' => (string) $fan->id,
+                    'creator_id' => (string) $creator->id,
+                    'type' => 'creator_subscription',
+                ],
+            ],
+
             'success_url' => route('subscriptions.success') . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('creators.show', $profile->slug),
+
             'metadata' => [
-                'fan_id' => $fan->id,
-                'creator_id' => $creator->id,
+                'fan_id' => (string) $fan->id,
+                'creator_id' => (string) $creator->id,
                 'type' => 'creator_subscription',
             ],
         ]);
@@ -71,6 +92,8 @@ class SubscriptionController extends Controller
             ],
             [
                 'stripe_checkout_session_id' => $session->id,
+                'stripe_account_destination' => $creator->stripe_account_id,
+                'application_fee_percent' => 20.00,
                 'amount' => $profile->monthly_price,
                 'currency' => config('cashier.currency', 'usd'),
                 'status' => 'pending',
@@ -78,44 +101,66 @@ class SubscriptionController extends Controller
         );
 
         return redirect($session->url);
+
     }
 
     public function success(Request $request)
     {
-        $sessionId = $request->get('session_id');
+        $sessionId = $request->query('session_id');
 
-        if (!$sessionId) {
-            return redirect()
-                ->route('dashboard')
-                ->withErrors(['subscription' => 'Missing session ID.']);
+        abort_unless($sessionId, 404);
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = Session::retrieve([
+            'id' => $sessionId,
+            'expand' => ['subscription'],
+        ]);
+
+        $fanId = data_get($session, 'metadata.fan_id');
+        $creatorId = data_get($session, 'metadata.creator_id');
+
+        abort_unless($fanId && $creatorId, 404);
+
+        $subscription = Plf_subscription::where('fan_id', $fanId)
+            ->where('creator_id', $creatorId)
+            ->firstOrFail();
+
+        $stripeSubscription = $session->subscription;
+
+        $status = 'pending';
+
+        if (
+            $session->payment_status === 'paid' ||
+            in_array(data_get($stripeSubscription, 'status'), ['active', 'trialing'])
+        ) {
+            $status = 'active';
+        } elseif (in_array(data_get($stripeSubscription, 'status'), ['incomplete', 'past_due', 'unpaid'])) {
+            $status = data_get($stripeSubscription, 'status');
         }
 
-        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        $subscription->update([
+            'stripe_checkout_session_id' => $session->id,
+            'stripe_subscription_id' => is_object($stripeSubscription)
+                ? $stripeSubscription->id
+                : $session->subscription,
+            'stripe_customer_id' => $session->customer,
+            'stripe_account_destination' => data_get($stripeSubscription, 'transfer_data.destination')
+                ?: $subscription->stripe_account_destination,
+            'application_fee_percent' => data_get($stripeSubscription, 'application_fee_percent')
+                ?: $subscription->application_fee_percent,
+            'status' => $status,
+            'subscribed_at' => $status === 'active' && !$subscription->subscribed_at
+                ? now()
+                : $subscription->subscribed_at,
+        ]);
 
-        try {
-            $session = \Stripe\Checkout\Session::retrieve($sessionId);
+        $creator = User::findOrFail($creatorId);
 
-            $fanId = $session->metadata->fan_id ?? null;
-            $creatorId = $session->metadata->creator_id ?? null;
-
-            if ($fanId && $creatorId) {
-                Plf_subscription::where('fan_id', $fanId)
-                    ->where('creator_id', $creatorId)
-                    ->update([
-                        'status' => 'active',
-                        'stripe_subscription_id' => $session->subscription ?? null,
-                        'updated_at' => now(),
-                    ]);
-            }
-
-        } catch (\Throwable $e) {
-            // Optional: log error
-            \Log::error('Stripe success error: ' . $e->getMessage());
-        }
-
-        return redirect()
-            ->route('dashboard')
-            ->with('success', 'Your subscription is now active.');
+        return view('subscriptions.success', [
+            'creator' => $creator,
+            'subscription' => $subscription->fresh(),
+        ]);
     }
 
     public function cancel(Request $request, User $creator)

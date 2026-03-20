@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Plf_subscription;
+use App\Models\Tip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
@@ -25,10 +26,6 @@ class StripeWebhookController extends Controller
         }
 
         switch ($event->type) {
-            case 'account.updated':
-                $this->handleAccountUpdated($event->data->object);
-                break;
-
             case 'checkout.session.completed':
                 $this->handleCheckoutSessionCompleted($event->data->object);
                 break;
@@ -46,84 +43,110 @@ class StripeWebhookController extends Controller
         return response('Webhook handled', 200);
     }
 
-    protected function handleAccountUpdated($account): void
-    {
-        $stripeAccountId = $account->id ?? null;
-
-        if (!$stripeAccountId) {
-            return;
-        }
-
-        $creator = User::where('stripe_account_id', $stripeAccountId)->first();
-
-        if (!$creator) {
-            Log::warning('Stripe account.updated received for unknown account', [
-                'stripe_account_id' => $stripeAccountId,
-            ]);
-            return;
-        }
-
-        $requirements = $account->requirements ?? null;
-
-        $currentlyDue = $requirements->currently_due ?? [];
-        $eventuallyDue = $requirements->eventually_due ?? [];
-        $pastDue = $requirements->past_due ?? [];
-        $pendingVerification = $requirements->pending_verification ?? [];
-
-        $status = $this->determineOnboardingStatus(
-            (bool) ($account->charges_enabled ?? false),
-            (bool) ($account->payouts_enabled ?? false),
-            $currentlyDue,
-            $pastDue
-        );
-
-        $creator->update([
-            'stripe_charges_enabled' => (bool) ($account->charges_enabled ?? false),
-            'stripe_payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
-            'stripe_onboarding_status' => $status,
-            'stripe_requirements' => [
-                'currently_due' => $currentlyDue,
-                'eventually_due' => $eventuallyDue,
-                'past_due' => $pastDue,
-                'pending_verification' => $pendingVerification,
-                'disabled_reason' => $requirements->disabled_reason ?? null,
-            ],
-            'stripe_onboarded_at' => (
-                (bool) ($account->charges_enabled ?? false)
-                && (bool) ($account->payouts_enabled ?? false)
-            ) ? ($creator->stripe_onboarded_at ?: now()) : $creator->stripe_onboarded_at,
-        ]);
-    }
-
-    protected function determineOnboardingStatus(
-        bool $chargesEnabled,
-        bool $payoutsEnabled,
-        array $currentlyDue,
-        array $pastDue
-    ): string {
-        if ($chargesEnabled && $payoutsEnabled) {
-            return 'connected';
-        }
-
-        if (!empty($currentlyDue) || !empty($pastDue)) {
-            return 'needs_action';
-        }
-
-        return 'pending';
-    }
-
     protected function handleCheckoutSessionCompleted($session): void
     {
-        // keep your existing subscription/tip webhook logic here
+        $type = data_get($session, 'metadata.type');
+
+        if ($type === 'creator_subscription') {
+            $fanId = data_get($session, 'metadata.fan_id');
+            $creatorId = data_get($session, 'metadata.creator_id');
+
+            $subscription = Plf_subscription::where('fan_id', $fanId)
+                ->where('creator_id', $creatorId)
+                ->first();
+
+            if (!$subscription) {
+                Log::warning('Subscription not found', ['session_id' => $session->id ?? null]);
+                return;
+            }
+
+            $subscription->update([
+                'stripe_checkout_session_id' => $session->id,
+                'stripe_subscription_id' => $session->subscription ?? $subscription->stripe_subscription_id,
+                'stripe_customer_id' => $session->customer ?? $subscription->stripe_customer_id,
+                'status' => ($session->payment_status ?? null) === 'paid' ? 'active' : $subscription->status,
+                'subscribed_at' => ($session->payment_status ?? null) === 'paid' && !$subscription->subscribed_at
+                    ? now()
+                    : $subscription->subscribed_at,
+            ]);
+
+            return;
+        }
+
+        if ($type === 'creator_tip') {
+            $tip = Tip::where('stripe_checkout_session_id', $session->id)->first();
+
+            if (!$tip) {
+                Log::warning('Tip not found', ['session_id' => $session->id ?? null]);
+                return;
+            }
+
+            $tip->update([
+                'stripe_payment_intent_id' => $session->payment_intent ?? $tip->stripe_payment_intent_id,
+                'status' => ($session->payment_status ?? null) === 'paid' ? 'succeeded' : $tip->status,
+                'paid_at' => ($session->payment_status ?? null) === 'paid' && !$tip->paid_at
+                    ? now()
+                    : $tip->paid_at,
+            ]);
+        }
     }
 
     protected function handleCustomerSubscriptionUpdated($stripeSubscription): void
     {
-        // keep your existing subscription webhook logic here
+        $fanId = data_get($stripeSubscription, 'metadata.fan_id');
+        $creatorId = data_get($stripeSubscription, 'metadata.creator_id');
+
+        $query = Plf_subscription::query();
+
+        if ($fanId && $creatorId) {
+            $query->where('fan_id', $fanId)
+                  ->where('creator_id', $creatorId);
+        } else {
+            $query->where('stripe_subscription_id', $stripeSubscription->id);
+        }
+
+        $subscription = $query->first();
+
+        if (!$subscription) {
+            Log::warning('Local subscription not found', [
+                'stripe_subscription_id' => $stripeSubscription->id ?? null,
+            ]);
+            return;
+        }
+
+        $status = $stripeSubscription->status ?? 'pending';
+
+        $subscription->update([
+            'stripe_subscription_id' => $stripeSubscription->id,
+            'stripe_customer_id' => $stripeSubscription->customer ?? $subscription->stripe_customer_id,
+            'stripe_account_destination' => data_get($stripeSubscription, 'transfer_data.destination')
+                ?: $subscription->stripe_account_destination,
+            'application_fee_percent' => data_get($stripeSubscription, 'application_fee_percent')
+                ?: $subscription->application_fee_percent,
+            'status' => $status,
+            'subscribed_at' => in_array($status, ['active', 'trialing']) && !$subscription->subscribed_at
+                ? now()
+                : $subscription->subscribed_at,
+            'canceled_at' => in_array($status, ['canceled', 'unpaid']) && !$subscription->canceled_at
+                ? now()
+                : $subscription->canceled_at,
+        ]);
     }
 
     protected function handleCustomerSubscriptionDeleted($stripeSubscription): void
     {
-        // keep your existing subscription webhook logic here
+        $subscription = Plf_subscription::where('stripe_subscription_id', $stripeSubscription->id)->first();
+
+        if (!$subscription) {
+            Log::warning('Local subscription not found for delete', [
+                'stripe_subscription_id' => $stripeSubscription->id ?? null,
+            ]);
+            return;
+        }
+
+        $subscription->update([
+            'status' => 'canceled',
+            'canceled_at' => now(),
+        ]);
     }
 }
