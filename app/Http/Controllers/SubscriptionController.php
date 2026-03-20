@@ -71,9 +71,40 @@ class SubscriptionController extends Controller
 
     public function success(Request $request)
     {
+        $sessionId = $request->get('session_id');
+
+        if (!$sessionId) {
+            return redirect()
+                ->route('dashboard')
+                ->withErrors(['subscription' => 'Missing session ID.']);
+        }
+
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+        try {
+            $session = \Stripe\Checkout\Session::retrieve($sessionId);
+
+            $fanId = $session->metadata->fan_id ?? null;
+            $creatorId = $session->metadata->creator_id ?? null;
+
+            if ($fanId && $creatorId) {
+                Plf_subscription::where('fan_id', $fanId)
+                    ->where('creator_id', $creatorId)
+                    ->update([
+                        'status' => 'active',
+                        'stripe_subscription_id' => $session->subscription ?? null,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+        } catch (\Throwable $e) {
+            // Optional: log error
+            \Log::error('Stripe success error: ' . $e->getMessage());
+        }
+
         return redirect()
             ->route('dashboard')
-            ->with('success', 'Your subscription checkout was completed. Access will be updated after confirmation.');
+            ->with('success', 'Your subscription is now active.');
     }
 
     public function cancel(Request $request, User $creator)

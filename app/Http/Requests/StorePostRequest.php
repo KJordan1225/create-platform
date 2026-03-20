@@ -18,7 +18,7 @@ class StorePostRequest extends FormRequest
             'is_locked' => ['nullable', 'boolean'],
             'is_published' => ['nullable', 'boolean'],
             'media' => ['nullable', 'array'],
-            'media.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm', 'max:20480'],
+            'media.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm'],
         ];
     }
 }

@@ -8,9 +8,11 @@ use App\Models\PostMedia;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdatePostRequest;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PostController extends Controller
 {
+    use AuthorizesRequests;
     public function index()
     {
         $posts = auth()->user()
@@ -33,7 +35,7 @@ class PostController extends Controller
             'caption' => ['nullable', 'string', 'max:10000'],
             'is_locked' => ['nullable', 'boolean'],
             'is_published' => ['nullable', 'boolean'],
-            'media.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm', 'max:20480'],
+            'media.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,mov,webm'],
         ]);
 
         $post = auth()->user()->posts()->create([
@@ -87,10 +89,12 @@ class PostController extends Controller
 
     public function destroyMedia(Post $post, \App\Models\PostMedia $media)
     {
+        
         $this->authorize('deleteMedia', $post);
+        abort_unless($post->user_id === auth()->id(), 403);
         abort_unless($media->post_id === $post->id, 404);
 
-        \Illuminate\Support\Facades\Storage::disk('public')->delete($media->file_path);
+        Storage::disk('public')->delete($media->file_path);
         $media->delete();
 
         return back()->with('success', 'Media removed successfully.');

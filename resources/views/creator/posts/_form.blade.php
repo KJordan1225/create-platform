@@ -42,11 +42,15 @@
                             @endif
 
                             <div class="p-2">
-                                <form method="POST" action="{{ route('creator.posts.media.destroy', [$post, $media]) }}"
-                                    onsubmit="return confirm('Remove this media item?')">
+                                <form method="POST"
+                                    action="{{ route('creator.posts.media.destroy', [$post, $media]) }}"
+                                    onsubmit="return confirmDelete(event, this)">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger w-100">Remove</button>
+
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                        Remove
+                                    </button>
                                 </form>
                             </div>
                         </div>

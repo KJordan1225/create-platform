@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PostController extends Controller
 {
+    use AuthorizesRequests;
+    
     public function show(Request $request, Post $post): View
     {
         abort_unless($post->is_published, 404);

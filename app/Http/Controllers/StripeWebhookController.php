@@ -48,6 +48,7 @@ class StripeWebhookController extends Controller
     {
         $metadata = (array) ($session->metadata ?? []);
         $type = $metadata['type'] ?? null;
+        dd('STOP - StripeWebhookController - ln 51');
 
         if ($type === 'creator_subscription') {
             $subscription = Plf_subscription::query()
