@@ -22,9 +22,8 @@ class DemoCreatorSeeder extends Seeder
                 'username' => 'democreator',
                 'password' => Hash::make('password'),
                 'role' => 'creator',
-                'is_creator' => true,
+                'is_creator' => false,
                 'is_active' => true,
-                'creator_approved_at' => now(),
                 'email_verified_at' => now(),
             ]
         );

@@ -26,11 +26,11 @@ class SubscriptionController extends Controller
         $fan = $request->user();
 
         abort_if($fan->id === $creator->id, 403, 'You cannot subscribe to yourself.');
-
+       
         if (
             empty($creator->stripe_account_id) ||
             !$creator->stripe_charges_enabled ||
-            !$creator->stripe_payouts_enabled ||
+            !$creator->stripe_charges_enabled ||
             $creator->stripe_onboarding_status !== 'connected'
         ) {
             return back()->withErrors([
@@ -39,7 +39,7 @@ class SubscriptionController extends Controller
         }
 
         $profile = $creator->creatorProfile;
-
+        
         if (!$profile || !$profile->stripe_price_id) {
             return back()->withErrors([
                 'subscription' => 'This creator is not ready for subscriptions yet.',

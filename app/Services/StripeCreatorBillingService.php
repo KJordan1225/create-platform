@@ -61,6 +61,6 @@ class StripeCreatorBillingService
         $profile->update([
             'stripe_product_id' => $productId,
             'stripe_price_id' => $priceId,
-        ]);
+        ]);        
     }
 }

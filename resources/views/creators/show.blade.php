@@ -20,7 +20,7 @@
                     <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
                         <div class="flex-grow-1">
                             <h1 class="h3 mb-1">{{ $creator->creatorProfile->display_name ?? $creator->name }}</h1>
-                            <div class="text-muted mb-2">@{{ $creator->username }}</div>
+                            <div class="text-muted mb-2">{{ $creator->username }}</div>
 
                             @if (!empty($creator->creatorProfile?->bio))
                                 <p class="mb-0">{{ $creator->creatorProfile->bio }}</p>

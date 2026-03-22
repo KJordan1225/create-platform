@@ -103,7 +103,7 @@
 
                     @if(auth()->user()->isAdmin())
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('admin.dashboard') }}">Admin</a>
+                            <a class="nav-link btn-primary" href="{{ route('admin.dashboard') }}">Admin</a>
                         </li>
                     @endif
 
