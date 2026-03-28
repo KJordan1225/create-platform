@@ -26,11 +26,15 @@ class PostController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->canCreateCreatorPosts(), 403);
+
         return view('creator.posts.create');
     }
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->canCreateCreatorPosts(), 403);
+        
         $data = $request->validate([
             'caption' => ['nullable', 'string', 'max:10000'],
             'is_locked' => ['nullable', 'boolean'],

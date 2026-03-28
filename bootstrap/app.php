@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'creator' => \App\Http\Middleware\EnsureUserIsCreator::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'creator.subscription' => \App\Http\Middleware\EnsureCreatorHasActivePlatformSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

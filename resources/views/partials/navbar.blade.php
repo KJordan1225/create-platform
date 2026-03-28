@@ -92,6 +92,16 @@
                             @endif
                         </a>
                     </li>
+					
+					@if(auth()->user()->canCreateCreatorPosts())
+						<a href="{{ route('creator.posts.create') }}" class="btn btn-primary rounded-pill">
+							New Post
+						</a>
+					@else
+						<a href="{{ route('creator.billing.subscribe') }}" class="btn btn-warning rounded-pill">
+							Unlock Posting
+						</a>
+					@endif
 
                     @if(auth()->user()->isApprovedCreator())
                         <li class="nav-item">
@@ -126,20 +136,7 @@
 
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('help.index') }}">Help</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('help.creator') }}">Creator Guide</a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('help.fan') }}">Fan Guide</a>
-                    </li>
-
-                    @if(auth()->check() && auth()->user()->isAdmin())
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('help.admin') }}">Admin Guide</a>
-                        </li>
-                    @endif
+                    </li>                    
                 @else
                     <li class="nav-item">
                         <a class="btn btn-primary btn-sm me-2 mb-2 mb-lg-0" href="{{ route('login') }}">Login</a>

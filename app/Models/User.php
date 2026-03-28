@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
+use App\Models\CreatorPlatformSubscription;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -168,5 +171,32 @@ class User extends Authenticatable
     {
         return $this->hasMany(Tip::class, 'fan_id');
     }
+
+    public function creatorPlatformSubscriptions(): HasMany
+    {
+        return $this->hasMany(CreatorPlatformSubscription::class);
+    }
+
+    public function latestCreatorPlatformSubscription(): HasOne
+    {
+        return $this->hasOne(CreatorPlatformSubscription::class)->latestOfMany();
+    }
+
+    public function hasActiveCreatorPlatformSubscription(): bool
+    {
+        $subscription = $this->creatorPlatformSubscriptions()
+            ->latest('id')
+            ->first();
+
+        return $subscription?->isActive() ?? false;
+    }
+
+    public function canCreateCreatorPosts(): bool
+    {
+        return $this->is_creator
+            && $this->is_active
+            && $this->hasActiveCreatorPlatformSubscription();
+    }
+
 
 }

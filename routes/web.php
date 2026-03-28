@@ -31,6 +31,8 @@ use App\Http\Controllers\Admin\ModerationController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\Creator\StripeConnectController;
+use App\Http\Controllers\Creator\CreatorBillingController;
+
 
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -105,6 +107,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
             Route::get('/creator/posts', [PostController::class, 'index'])->name('creator.posts.index');
+
+            Route::get('/billing/subscribe', [CreatorBillingController::class, 'show'])
+            ->name('billing.subscribe');
+
+            Route::post('/billing/checkout/{plan:slug}', [CreatorBillingController::class, 'checkout'])
+                ->name('billing.checkout');
+
+            Route::get('/billing/success', [CreatorBillingController::class, 'success'])
+                ->name('billing.success');
+
+            Route::get('/billing/cancel', [CreatorBillingController::class, 'cancel'])
+                ->name('billing.cancel');
         });
 
     Route::prefix('admin')

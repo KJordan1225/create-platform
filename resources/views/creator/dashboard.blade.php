@@ -82,6 +82,21 @@
                 </a>
             </div>
         @endif
+
+        @if(!auth()->user()->hasActiveCreatorPlatformSubscription())
+            <div class="alert alert-warning rounded-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <strong>Posting is locked.</strong><br>
+                    Activate your creator subscription to publish new posts.
+                </div>
+                <div>
+                    <a href="{{ route('creator.billing.subscribe') }}" class="btn btn-primary rounded-pill px-4">
+                        Activate Now
+                    </a>
+                </div>
+            </div>
+        @endif
+
     </div>
 </div>
 
