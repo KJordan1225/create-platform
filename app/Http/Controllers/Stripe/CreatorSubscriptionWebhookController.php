@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Stripe;
 use App\Http\Controllers\Controller;
 use App\Models\CreatorPlatformPlan;
 use App\Models\CreatorPlatformSubscription;
+use App\Models\StripeWebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Stripe\Exception\SignatureVerificationException;
-use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use UnexpectedValueException;
@@ -21,34 +21,71 @@ class CreatorSubscriptionWebhookController extends Controller
         $signature = $request->header('Stripe-Signature');
         $secret = config('services.stripe.webhook_secret');
 
+        $log = StripeWebhookEvent::create([
+            'provider' => 'stripe',
+            'headers' => $request->headers->all(),
+            'payload' => json_decode($payload, true),
+            'received_at' => now(),
+            'processed' => false,
+            'http_status' => 200,
+        ]);
+
         try {
             if ($secret) {
                 $event = Webhook::constructEvent($payload, $signature, $secret);
             } else {
                 $event = json_decode($payload, false, 512, JSON_THROW_ON_ERROR);
             }
+
+            $log->update([
+                'event_id' => $event->id ?? null,
+                'event_type' => $event->type ?? null,
+            ]);
         } catch (UnexpectedValueException|SignatureVerificationException|\JsonException $e) {
+            $log->update([
+                'http_status' => 400,
+                'processed' => false,
+                'message' => $e->getMessage(),
+                'processed_at' => now(),
+            ]);
+
             return response('Invalid webhook payload.', 400);
         }
 
-        Stripe::setApiKey(config('services.stripe.secret'));
         $stripe = new StripeClient(config('services.stripe.secret'));
 
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                $this->handleCheckoutSessionCompleted($event->data->object, $stripe);
-                break;
+        try {
+            switch ($event->type) {
+                case 'checkout.session.completed':
+                    $this->handleCheckoutSessionCompleted($event->data->object, $stripe);
+                    break;
 
-            case 'customer.subscription.updated':
-                $this->handleSubscriptionUpdated($event->data->object);
-                break;
+                case 'customer.subscription.updated':
+                    $this->handleSubscriptionUpdated($event->data->object);
+                    break;
 
-            case 'customer.subscription.deleted':
-                $this->handleSubscriptionDeleted($event->data->object);
-                break;
+                case 'customer.subscription.deleted':
+                    $this->handleSubscriptionDeleted($event->data->object);
+                    break;
+            }
+
+            $log->update([
+                'processed' => true,
+                'message' => 'Webhook handled successfully.',
+                'processed_at' => now(),
+            ]);
+
+            return response('Webhook handled.', 200);
+        } catch (\Throwable $e) {
+            $log->update([
+                'http_status' => 500,
+                'processed' => false,
+                'message' => $e->getMessage(),
+                'processed_at' => now(),
+            ]);
+
+            return response('Webhook failed.', 500);
         }
-
-        return response('Webhook handled.', 200);
     }
 
     protected function handleCheckoutSessionCompleted(object $session, StripeClient $stripe): void
@@ -83,20 +120,23 @@ class CreatorSubscriptionWebhookController extends Controller
                 'stripe_checkout_session_id' => $session->id ?? null,
                 'stripe_customer_id' => $session->customer ?? null,
                 'status' => $stripeSubscription->status ?? 'active',
+                'is_trial' => ($stripeSubscription->status ?? null) === 'trialing',
+                'trial_ends_at' => isset($stripeSubscription->trial_end)
+                    ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end)
+                    : null,
                 'starts_at' => now(),
                 'renews_at' => isset($stripeSubscription->current_period_end)
                     ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
                     : null,
-                'ends_at' => !empty($stripeSubscription->cancel_at_period_end) && isset($stripeSubscription->current_period_end)
+                'ends_at' => !empty($stripeSubscription->cancel_at_period_end)
                     ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
                     : null,
                 'canceled_at' => !empty($stripeSubscription->canceled_at)
                     ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->canceled_at)
                     : null,
                 'meta' => [
-                    'checkout_session_id' => $session->id ?? null,
-                    'webhook' => 'checkout.session.completed',
                     'cancel_at_period_end' => (bool) ($stripeSubscription->cancel_at_period_end ?? false),
+                    'last_webhook' => 'checkout.session.completed',
                 ],
             ]
         );
@@ -104,9 +144,7 @@ class CreatorSubscriptionWebhookController extends Controller
 
     protected function handleSubscriptionUpdated(object $stripeSubscription): void
     {
-        $subscription = CreatorPlatformSubscription::query()
-            ->where('stripe_subscription_id', $stripeSubscription->id)
-            ->first();
+        $subscription = CreatorPlatformSubscription::where('stripe_subscription_id', $stripeSubscription->id)->first();
 
         if (!$subscription) {
             return;
@@ -114,28 +152,29 @@ class CreatorSubscriptionWebhookController extends Controller
 
         $subscription->update([
             'status' => $stripeSubscription->status ?? $subscription->status,
+            'is_trial' => ($stripeSubscription->status ?? null) === 'trialing',
+            'trial_ends_at' => isset($stripeSubscription->trial_end)
+                ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end)
+                : null,
             'renews_at' => isset($stripeSubscription->current_period_end)
                 ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
                 : $subscription->renews_at,
             'ends_at' => !empty($stripeSubscription->cancel_at_period_end)
-                && isset($stripeSubscription->current_period_end)
-                    ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
-                    : null,
+                ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
+                : null,
             'canceled_at' => !empty($stripeSubscription->canceled_at)
                 ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->canceled_at)
                 : null,
             'meta' => array_merge($subscription->meta ?? [], [
-                'last_webhook' => 'customer.subscription.updated',
                 'cancel_at_period_end' => (bool) ($stripeSubscription->cancel_at_period_end ?? false),
+                'last_webhook' => 'customer.subscription.updated',
             ]),
         ]);
     }
 
     protected function handleSubscriptionDeleted(object $stripeSubscription): void
     {
-        $subscription = CreatorPlatformSubscription::query()
-            ->where('stripe_subscription_id', $stripeSubscription->id)
-            ->first();
+        $subscription = CreatorPlatformSubscription::where('stripe_subscription_id', $stripeSubscription->id)->first();
 
         if (!$subscription) {
             return;
@@ -146,8 +185,8 @@ class CreatorSubscriptionWebhookController extends Controller
             'ends_at' => now(),
             'canceled_at' => now(),
             'meta' => array_merge($subscription->meta ?? [], [
-                'last_webhook' => 'customer.subscription.deleted',
                 'cancel_at_period_end' => false,
+                'last_webhook' => 'customer.subscription.deleted',
             ]),
         ]);
     }

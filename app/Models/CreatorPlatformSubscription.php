@@ -15,18 +15,26 @@ class CreatorPlatformSubscription extends Model
         'stripe_subscription_id',
         'stripe_customer_id',
         'status',
+        'is_trial',
+        'trial_ends_at',
         'starts_at',
         'renews_at',
         'ends_at',
         'canceled_at',
+        'revoked_at',
+        'assigned_by',
+        'admin_note',
         'meta',
     ];
 
     protected $casts = [
+        'is_trial' => 'boolean',
+        'trial_ends_at' => 'datetime',
         'starts_at' => 'datetime',
         'renews_at' => 'datetime',
         'ends_at' => 'datetime',
         'canceled_at' => 'datetime',
+        'revoked_at' => 'datetime',
         'meta' => 'array',
     ];
 
@@ -40,9 +48,22 @@ class CreatorPlatformSubscription extends Model
         return $this->belongsTo(CreatorPlatformPlan::class, 'creator_platform_plan_id');
     }
 
+    public function assigner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
     public function isActive(): bool
     {
+        if ($this->revoked_at) {
+            return false;
+        }
+
         if (!in_array($this->status, ['active', 'trialing'], true)) {
+            return false;
+        }
+
+        if ($this->trial_ends_at && $this->status === 'trialing' && now()->greaterThan($this->trial_ends_at)) {
             return false;
         }
 
@@ -53,22 +74,14 @@ class CreatorPlatformSubscription extends Model
         return true;
     }
 
-    public function isCanceledButStillActive(): bool
-    {
-        return $this->isActive()
-            && $this->ends_at !== null
-            && $this->ends_at->isFuture();
-    }
-
-    public function isFullyCanceled(): bool
-    {
-        return in_array($this->status, ['canceled', 'unpaid', 'inactive'], true)
-            || ($this->ends_at && $this->ends_at->isPast());
-    }
-
     public function willCancelAtPeriodEnd(): bool
     {
         return (bool) data_get($this->meta, 'cancel_at_period_end', false);
+    }
+
+    public function isManual(): bool
+    {
+        return blank($this->stripe_subscription_id);
     }
 
     public function statusBadgeClass(): string

@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Stripe\BillingPortal\Session as BillingPortalSession;
 use Stripe\Checkout\Session;
-use Stripe\Stripe;
 use Stripe\StripeClient;
 
 class CreatorBillingController extends Controller
@@ -24,11 +23,21 @@ class CreatorBillingController extends Controller
 
         $subscription = $request->user()->latestCreatorPlatformSubscription;
         $history = $request->user()->creatorPlatformSubscriptions()
-            ->with('plan')
+            ->with(['plan', 'assigner'])
             ->latest('id')
-            ->get();
+            ->paginate(15);
 
         return view('creator.billing.subscribe', compact('plans', 'subscription', 'history'));
+    }
+
+    public function history(Request $request): View
+    {
+        $history = $request->user()->creatorPlatformSubscriptions()
+            ->with(['plan', 'assigner'])
+            ->latest('id')
+            ->paginate(20);
+
+        return view('creator.billing.history', compact('history'));
     }
 
     public function checkout(Request $request, CreatorPlatformPlan $plan): RedirectResponse
@@ -41,15 +50,28 @@ class CreatorBillingController extends Controller
             return back()->with('error', 'This creator plan is not available right now.');
         }
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $stripe = new StripeClient(config('services.stripe.secret'));
 
-        $session = Session::create([
+        $subscriptionData = [
+            'metadata' => [
+                'type' => 'creator_platform_subscription',
+                'user_id' => (string) $user->id,
+                'plan_id' => (string) $plan->id,
+            ],
+        ];
+
+        if ($plan->has_trial && $plan->trial_days > 0) {
+            $subscriptionData['trial_period_days'] = $plan->trial_days;
+        }
+
+        $session = $stripe->checkout->sessions->create([
             'mode' => 'subscription',
             'customer_email' => $user->email,
             'line_items' => [[
                 'price' => $plan->stripe_price_id,
                 'quantity' => 1,
             ]],
+            'subscription_data' => $subscriptionData,
             'metadata' => [
                 'type' => 'creator_platform_subscription',
                 'user_id' => (string) $user->id,
@@ -69,23 +91,10 @@ class CreatorBillingController extends Controller
         ]);
 
         $user = $request->user();
-
-        Stripe::setApiKey(config('services.stripe.secret'));
         $stripe = new StripeClient(config('services.stripe.secret'));
 
         $session = $stripe->checkout->sessions->retrieve($validated['session_id'], []);
-
-        if (($session->metadata->type ?? null) !== 'creator_platform_subscription') {
-            return redirect()
-                ->route('creator.billing.subscribe')
-                ->with('error', 'Invalid checkout session.');
-        }
-
-        if ((int) ($session->metadata->user_id ?? 0) !== (int) $user->id) {
-            abort(403, 'This checkout session does not belong to you.');
-        }
-
-        $plan = CreatorPlatformPlan::findOrFail((int) $session->metadata->plan_id);
+        $plan = CreatorPlatformPlan::findOrFail((int) ($session->metadata->plan_id ?? 0));
 
         $stripeSubscription = null;
 
@@ -104,6 +113,10 @@ class CreatorBillingController extends Controller
                 'stripe_checkout_session_id' => $session->id,
                 'stripe_customer_id' => $session->customer ?? null,
                 'status' => $stripeSubscription->status ?? 'active',
+                'is_trial' => ($stripeSubscription->status ?? null) === 'trialing',
+                'trial_ends_at' => isset($stripeSubscription->trial_end)
+                    ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end)
+                    : null,
                 'starts_at' => now(),
                 'renews_at' => isset($stripeSubscription->current_period_end)
                     ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
@@ -116,7 +129,6 @@ class CreatorBillingController extends Controller
                     : null,
                 'meta' => [
                     'checkout_session_id' => $session->id,
-                    'livemode' => $session->livemode ?? false,
                     'cancel_at_period_end' => (bool) ($stripeSubscription->cancel_at_period_end ?? false),
                 ],
             ]
@@ -124,7 +136,7 @@ class CreatorBillingController extends Controller
 
         return redirect()
             ->route('creator.posts.index')
-            ->with('success', 'Your creator subscription is active. You can now publish posts.');
+            ->with('success', 'Your creator subscription is active.');
     }
 
     public function cancel(): RedirectResponse
@@ -136,16 +148,11 @@ class CreatorBillingController extends Controller
 
     public function portal(Request $request): RedirectResponse
     {
-        $user = $request->user();
-        $subscription = $user->latestCreatorPlatformSubscription;
-
-        abort_unless($user && $user->is_creator, 403);
+        $subscription = $request->user()->latestCreatorPlatformSubscription;
 
         if (!$subscription || blank($subscription->stripe_customer_id)) {
-            return back()->with('error', 'No billing portal is available for this account yet.');
+            return back()->with('error', 'No billing portal is available for this account.');
         }
-
-        Stripe::setApiKey(config('services.stripe.secret'));
 
         $portal = BillingPortalSession::create([
             'customer' => $subscription->stripe_customer_id,
@@ -157,13 +164,10 @@ class CreatorBillingController extends Controller
 
     public function cancelAtPeriodEnd(Request $request): RedirectResponse
     {
-        $user = $request->user();
-        $subscription = $user->latestCreatorPlatformSubscription;
-
-        abort_unless($user && $user->is_creator, 403);
+        $subscription = $request->user()->latestCreatorPlatformSubscription;
 
         if (!$subscription || blank($subscription->stripe_subscription_id)) {
-            return back()->with('error', 'No active creator subscription was found.');
+            return back()->with('error', 'No Stripe-backed creator subscription was found.');
         }
 
         if (!$subscription->isActive()) {
@@ -181,81 +185,12 @@ class CreatorBillingController extends Controller
             'ends_at' => isset($updated->current_period_end)
                 ? \Carbon\Carbon::createFromTimestamp($updated->current_period_end)
                 : $subscription->ends_at,
-            'canceled_at' => !empty($updated->canceled_at)
-                ? \Carbon\Carbon::createFromTimestamp($updated->canceled_at)
-                : now(),
             'meta' => array_merge($subscription->meta ?? [], [
                 'cancel_at_period_end' => true,
                 'last_action' => 'cancel_at_period_end',
             ]),
         ]);
 
-        return back()->with(
-            'success',
-            'Your subscription will remain active until the end of the current billing period.'
-        );
-    }
-
-    public function reactivate(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-        $subscription = $user->latestCreatorPlatformSubscription;
-
-        abort_unless($user && $user->is_creator, 403);
-
-        if (!$subscription || blank($subscription->stripe_subscription_id)) {
-            return back()->with('error', 'No creator subscription was found.');
-        }
-
-        $stripe = new StripeClient(config('services.stripe.secret'));
-
-        $updated = $stripe->subscriptions->update($subscription->stripe_subscription_id, [
-            'cancel_at_period_end' => false,
-        ]);
-
-        $subscription->update([
-            'status' => $updated->status ?? $subscription->status,
-            'ends_at' => null,
-            'canceled_at' => null,
-            'renews_at' => isset($updated->current_period_end)
-                ? \Carbon\Carbon::createFromTimestamp($updated->current_period_end)
-                : $subscription->renews_at,
-            'meta' => array_merge($subscription->meta ?? [], [
-                'cancel_at_period_end' => false,
-                'last_action' => 'reactivate',
-            ]),
-        ]);
-
-        return back()->with('success', 'Your creator subscription has been reactivated.');
-    }
-
-    public function cancelNow(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-        $subscription = $user->latestCreatorPlatformSubscription;
-
-        abort_unless($user && $user->is_creator, 403);
-
-        if (!$subscription || blank($subscription->stripe_subscription_id)) {
-            return back()->with('error', 'No creator subscription was found.');
-        }
-
-        $stripe = new StripeClient(config('services.stripe.secret'));
-
-        $stripe->subscriptions->cancel($subscription->stripe_subscription_id, []);
-
-        $subscription->update([
-            'status' => 'canceled',
-            'ends_at' => now(),
-            'canceled_at' => now(),
-            'meta' => array_merge($subscription->meta ?? [], [
-                'cancel_at_period_end' => false,
-                'last_action' => 'cancel_now',
-            ]),
-        ]);
-
-        return redirect()
-            ->route('creator.billing.subscribe')
-            ->with('success', 'Your creator subscription has been canceled immediately.');
+        return back()->with('success', 'Your subscription will cancel at the end of the current billing period.');
     }
 }

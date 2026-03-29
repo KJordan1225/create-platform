@@ -18,7 +18,15 @@ class CreatorPlatformPlanSeeder extends Seeder
                 'interval' => 'month',
                 'stripe_price_id' => env('STRIPE_CREATOR_MONTHLY_PRICE_ID'),
                 'is_active' => true,
-                'description' => 'Create and publish subscriber content on the platform.',
+                'has_trial' => true,
+                'trial_days' => 7,
+                'description' => 'Unlock post publishing, creator tools, and platform visibility.',
+                'features' => [
+                    'Create and publish posts',
+                    'Manage subscriber content',
+                    'Access creator dashboard tools',
+                    'Optional free trial support',
+                ],
             ]
         );
     }

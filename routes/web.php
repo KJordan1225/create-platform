@@ -34,6 +34,7 @@ use App\Http\Controllers\Creator\StripeConnectController;
 use App\Http\Controllers\Creator\CreatorBillingController;
 use App\Http\Controllers\Stripe\CreatorSubscriptionWebhookController;
 use App\Http\Controllers\Admin\CreatorSubscriptionAdminController;
+use App\Http\Controllers\Creator\PostMediaController;
 
 
 
@@ -124,6 +125,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('/billing/cancel', [CreatorBillingController::class, 'cancel'])
                 ->name('billing.cancel');
+
+            Route::middleware(['creator.subscription'])->group(function () {
+                Route::post('/posts/{post}/media', [PostMediaController::class, 'store'])->name('posts.media.store');
+                Route::delete('/posts/{post}/media/{mediaId}', [PostMediaController::class, 'destroy'])->name('posts.media.destroy');
+            });
         });
 
     Route::prefix('admin')

@@ -62,6 +62,12 @@
                                         Posting access is currently disabled.
                                     </p>
                                 @endif
+
+                                @if ($subscription?->is_trial && $subscription?->trial_ends_at)
+                                    <div class="alert alert-info rounded-4 shadow-sm border-0 mt-3 mb-0">
+                                        You are currently on a trial plan until {{ $subscription->trial_ends_at->format('M d, Y') }}.
+                                    </div>
+                                @endif
                             </div>
 
                             <div class="col-12 col-lg-5">
@@ -165,12 +171,15 @@
 
             @include('creator.billing.partials.subscription-history', ['history' => $history])
 
-            <div class="mt-4">
+            <div class="mt-4 d-flex flex-column flex-sm-row gap-2">
                 <a href="{{ route('creator.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4">
                     Back to Dashboard
                 </a>
-            </div>
 
+                <a href="{{ route('creator.billing.history') }}" class="btn btn-outline-primary rounded-pill px-4">
+                    View Full Billing History
+                </a>
+            </div>
         </div>
     </div>
 </div>
