@@ -2,151 +2,201 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Plf_subscription;
-use App\Models\Tip;
+use App\Models\CreatorPlatformSubscription;
+use App\Models\CreatorSubscriptionWebhookLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
+use UnexpectedValueException;
 
 class StripeWebhookController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response
     {
         $payload = $request->getContent();
-        $sigHeader = $request->server('HTTP_STRIPE_SIGNATURE');
+        $signature = $request->server('HTTP_STRIPE_SIGNATURE');
         $secret = config('services.stripe.webhook_secret');
 
+        if (!$secret) {
+            Log::error('Stripe webhook secret missing.');
+            return response('Webhook secret not configured.', 500);
+        }
+
         try {
-            $event = Webhook::constructEvent($payload, $sigHeader, $secret);
-        } catch (\UnexpectedValueException $e) {
+            $event = Webhook::constructEvent($payload, $signature, $secret);
+        } catch (UnexpectedValueException $e) {
+            Log::warning('Stripe webhook invalid payload.', [
+                'message' => $e->getMessage(),
+            ]);
+
             return response('Invalid payload.', 400);
         } catch (SignatureVerificationException $e) {
+            Log::warning('Stripe webhook signature verification failed.', [
+                'message' => $e->getMessage(),
+            ]);
+
             return response('Invalid signature.', 400);
         }
 
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                $this->handleCheckoutSessionCompleted($event->data->object);
-                break;
+        $this->storeWebhookLog($event, $payload);
 
-            case 'customer.subscription.created':
-            case 'customer.subscription.updated':
-                $this->handleCustomerSubscriptionUpdated($event->data->object);
-                break;
+        match ($event->type) {
+            'checkout.session.completed'      => $this->handleCheckoutSessionCompleted($event->data->object),
+            'customer.subscription.updated'  => $this->handleCustomerSubscriptionUpdated($event->data->object),
+            'customer.subscription.deleted'  => $this->handleCustomerSubscriptionDeleted($event->data->object),
+            default                          => null,
+        };
 
-            case 'customer.subscription.deleted':
-                $this->handleCustomerSubscriptionDeleted($event->data->object);
-                break;
-        }
-
-        return response('Webhook handled', 200);
+        return response('Webhook handled.', 200);
     }
 
-    protected function handleCheckoutSessionCompleted($session): void
+    protected function handleCheckoutSessionCompleted(object $session): void
     {
-        $type = data_get($session, 'metadata.type');
-
-        if ($type === 'creator_subscription') {
-            $fanId = data_get($session, 'metadata.fan_id');
-            $creatorId = data_get($session, 'metadata.creator_id');
-
-            $subscription = Plf_subscription::where('fan_id', $fanId)
-                ->where('creator_id', $creatorId)
-                ->first();
-
-            if (!$subscription) {
-                Log::warning('Subscription not found', ['session_id' => $session->id ?? null]);
-                return;
-            }
-
-            $subscription->update([
-                'stripe_checkout_session_id' => $session->id,
-                'stripe_subscription_id' => $session->subscription ?? $subscription->stripe_subscription_id,
-                'stripe_customer_id' => $session->customer ?? $subscription->stripe_customer_id,
-                'status' => ($session->payment_status ?? null) === 'paid' ? 'active' : $subscription->status,
-                'subscribed_at' => ($session->payment_status ?? null) === 'paid' && !$subscription->subscribed_at
-                    ? now()
-                    : $subscription->subscribed_at,
-            ]);
-
+        if (($session->mode ?? null) !== 'subscription') {
             return;
         }
 
-        if ($type === 'creator_tip') {
-            $tip = Tip::where('stripe_checkout_session_id', $session->id)->first();
+        $metadata = (array) ($session->metadata ?? []);
 
-            if (!$tip) {
-                Log::warning('Tip not found', ['session_id' => $session->id ?? null]);
-                return;
-            }
-
-            $tip->update([
-                'stripe_payment_intent_id' => $session->payment_intent ?? $tip->stripe_payment_intent_id,
-                'status' => ($session->payment_status ?? null) === 'paid' ? 'succeeded' : $tip->status,
-                'paid_at' => ($session->payment_status ?? null) === 'paid' && !$tip->paid_at
-                    ? now()
-                    : $tip->paid_at,
-            ]);
-        }
-    }
-
-    protected function handleCustomerSubscriptionUpdated($stripeSubscription): void
-    {
-        $fanId = data_get($stripeSubscription, 'metadata.fan_id');
-        $creatorId = data_get($stripeSubscription, 'metadata.creator_id');
-
-        $query = Plf_subscription::query();
-
-        if ($fanId && $creatorId) {
-            $query->where('fan_id', $fanId)
-                  ->where('creator_id', $creatorId);
-        } else {
-            $query->where('stripe_subscription_id', $stripeSubscription->id);
+        if (($metadata['type'] ?? null) !== 'creator_platform_subscription') {
+            return;
         }
 
-        $subscription = $query->first();
+        $userId = $metadata['user_id'] ?? null;
+        $planId = $metadata['plan_id'] ?? null;
+        $stripeSubscriptionId = $session->subscription ?? null;
+        $stripeCustomerId = $session->customer ?? null;
 
-        if (!$subscription) {
-            Log::warning('Local subscription not found', [
-                'stripe_subscription_id' => $stripeSubscription->id ?? null,
+        if (!$userId || !$planId || !$stripeSubscriptionId) {
+            Log::warning('Stripe checkout.session.completed missing required metadata.', [
+                'session_id' => $session->id ?? null,
+                'metadata' => $metadata,
             ]);
             return;
         }
 
-        $status = $stripeSubscription->status ?? 'pending';
-
-        $subscription->update([
-            'stripe_subscription_id' => $stripeSubscription->id,
-            'stripe_customer_id' => $stripeSubscription->customer ?? $subscription->stripe_customer_id,
-            'stripe_account_destination' => data_get($stripeSubscription, 'transfer_data.destination')
-                ?: $subscription->stripe_account_destination,
-            'application_fee_percent' => data_get($stripeSubscription, 'application_fee_percent')
-                ?: $subscription->application_fee_percent,
-            'status' => $status,
-            'subscribed_at' => in_array($status, ['active', 'trialing']) && !$subscription->subscribed_at
-                ? now()
-                : $subscription->subscribed_at,
-            'canceled_at' => in_array($status, ['canceled', 'unpaid']) && !$subscription->canceled_at
-                ? now()
-                : $subscription->canceled_at,
+        $subscription = CreatorPlatformSubscription::firstOrNew([
+            'user_id' => $userId,
         ]);
+
+        $subscription->fill([
+            'plan_id' => $planId,
+            'stripe_checkout_session_id' => $session->id ?? null,
+            'stripe_customer_id' => $stripeCustomerId,
+            'stripe_subscription_id' => $stripeSubscriptionId,
+            'status' => 'active',
+            'started_at' => now(),
+            'renews_at' => null,
+            'ends_at' => null,
+            'canceled_at' => null,
+            'raw_payload' => $this->safeJson($session),
+        ]);
+
+        $subscription->save();
     }
 
-    protected function handleCustomerSubscriptionDeleted($stripeSubscription): void
+    protected function handleCustomerSubscriptionUpdated(object $stripeSubscription): void
     {
-        $subscription = Plf_subscription::where('stripe_subscription_id', $stripeSubscription->id)->first();
+        $local = CreatorPlatformSubscription::where(
+            'stripe_subscription_id',
+            $stripeSubscription->id
+        )->first();
 
-        if (!$subscription) {
-            Log::warning('Local subscription not found for delete', [
-                'stripe_subscription_id' => $stripeSubscription->id ?? null,
+        if (!$local) {
+            Log::warning('Local creator subscription not found for Stripe subscription update.', [
+                'stripe_subscription_id' => $stripeSubscription->id,
             ]);
             return;
         }
 
-        $subscription->update([
-            'status' => 'canceled',
-            'canceled_at' => now(),
-        ]);
+        $status = $this->mapStripeStatusToLocalStatus($stripeSubscription->status ?? null);
+
+        $periodStart = !empty($stripeSubscription->current_period_start)
+            ? Carbon::createFromTimestamp($stripeSubscription->current_period_start)
+            : null;
+
+        $periodEnd = !empty($stripeSubscription->current_period_end)
+            ? Carbon::createFromTimestamp($stripeSubscription->current_period_end)
+            : null;
+
+        $cancelAt = !empty($stripeSubscription->cancel_at)
+            ? Carbon::createFromTimestamp($stripeSubscription->cancel_at)
+            : null;
+
+        $canceledAt = !empty($stripeSubscription->canceled_at)
+            ? Carbon::createFromTimestamp($stripeSubscription->canceled_at)
+            : null;
+
+        $cancelAtPeriodEnd = (bool) ($stripeSubscription->cancel_at_period_end ?? false);
+
+        $local->status = $status;
+        $local->started_at = $local->started_at ?: $periodStart;
+        $local->renews_at = $status === 'active' && !$cancelAtPeriodEnd ? $periodEnd : null;
+        $local->ends_at = $cancelAtPeriodEnd ? ($cancelAt ?: $periodEnd) : null;
+        $local->canceled_at = $canceledAt;
+        $local->raw_payload = $this->safeJson($stripeSubscription);
+
+        $local->save();
+    }
+
+    protected function handleCustomerSubscriptionDeleted(object $stripeSubscription): void
+    {
+        $local = CreatorPlatformSubscription::where(
+            'stripe_subscription_id',
+            $stripeSubscription->id
+        )->first();
+
+        if (!$local) {
+            Log::warning('Local creator subscription not found for Stripe subscription delete.', [
+                'stripe_subscription_id' => $stripeSubscription->id,
+            ]);
+            return;
+        }
+
+        $local->status = 'canceled';
+        $local->canceled_at = now();
+        $local->ends_at = now();
+        $local->renews_at = null;
+        $local->raw_payload = $this->safeJson($stripeSubscription);
+
+        $local->save();
+    }
+
+    protected function mapStripeStatusToLocalStatus(?string $stripeStatus): string
+    {
+        return match ($stripeStatus) {
+            'trialing' => 'trialing',
+            'active' => 'active',
+            'past_due' => 'past_due',
+            'unpaid' => 'unpaid',
+            'canceled' => 'canceled',
+            'incomplete' => 'incomplete',
+            'incomplete_expired' => 'expired',
+            default => 'inactive',
+        };
+    }
+
+    protected function safeJson(object $payload): array
+    {
+        return json_decode(json_encode($payload), true) ?? [];
+    }
+
+    protected function storeWebhookLog(object $event, string $payload): void
+    {
+        if (!class_exists(CreatorSubscriptionWebhookLog::class)) {
+            return;
+        }
+
+        CreatorSubscriptionWebhookLog::updateOrCreate(
+            ['stripe_event_id' => $event->id],
+            [
+                'event_type' => $event->type,
+                'payload' => json_decode($payload, true),
+                'processed_at' => now(),
+            ]
+        );
     }
 }
