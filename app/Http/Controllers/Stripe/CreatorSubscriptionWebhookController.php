@@ -170,6 +170,25 @@ class CreatorSubscriptionWebhookController extends Controller
                 'last_webhook' => 'customer.subscription.updated',
             ]),
         ]);
+
+        \App\Models\CreatorSubscriptionAudit::create([
+            'creator_platform_subscription_id' => $subscription->id,
+            'user_id' => $subscription->user_id,
+            'action' => 'webhook_updated',
+            'note' => 'Subscription updated from Stripe webhook.',
+            'new_values' => $subscription->fresh()->only([
+                'status',
+                'is_trial',
+                'trial_ends_at',
+                'renews_at',
+                'ends_at',
+                'canceled_at',
+            ]),
+            'meta' => [
+                'webhook' => 'customer.subscription.updated',
+                'stripe_subscription_id' => $subscription->stripe_subscription_id,
+            ],
+        ]);
     }
 
     protected function handleSubscriptionDeleted(object $stripeSubscription): void
@@ -188,6 +207,22 @@ class CreatorSubscriptionWebhookController extends Controller
                 'cancel_at_period_end' => false,
                 'last_webhook' => 'customer.subscription.deleted',
             ]),
+        ]);
+
+        \App\Models\CreatorSubscriptionAudit::create([
+            'creator_platform_subscription_id' => $subscription->id,
+            'user_id' => $subscription->user_id,
+            'action' => 'webhook_updated',
+            'note' => 'Subscription deleted from Stripe webhook.',
+            'new_values' => $subscription->fresh()->only([
+                'status',
+                'ends_at',
+                'canceled_at',
+            ]),
+            'meta' => [
+                'webhook' => 'customer.subscription.deleted',
+                'stripe_subscription_id' => $subscription->stripe_subscription_id,
+            ],
         ]);
     }
 }
