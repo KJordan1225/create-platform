@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CreatorPlatformPlan;
 use App\Models\CreatorPlatformSubscription;
+use App\Models\CreatorSubscriptionAudit;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,8 +23,8 @@ class CreatorSubscriptionAdminController extends Controller
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%");
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('username', 'like', "%{$search}%");
                 });
             })
             ->latest('id')
@@ -50,7 +51,7 @@ class CreatorSubscriptionAdminController extends Controller
 
         $plan = CreatorPlatformPlan::findOrFail($data['creator_platform_plan_id']);
 
-        CreatorPlatformSubscription::create([
+        $subscription = CreatorPlatformSubscription::create([
             'user_id' => $user->id,
             'creator_platform_plan_id' => $plan->id,
             'provider' => 'manual',
@@ -68,6 +69,24 @@ class CreatorSubscriptionAdminController extends Controller
             ],
         ]);
 
+        CreatorSubscriptionAudit::create([
+            'creator_platform_subscription_id' => $subscription->id,
+            'user_id' => $user->id,
+            'admin_user_id' => $request->user()->id,
+            'action' => 'assigned',
+            'note' => $data['admin_note'] ?? 'Assigned manually from admin console.',
+            'new_values' => $subscription->only([
+                'status',
+                'is_trial',
+                'trial_ends_at',
+                'starts_at',
+                'renews_at',
+            ]),
+            'meta' => [
+                'provider' => 'manual',
+            ],
+        ]);
+
         return back()->with('success', 'Creator plan assigned successfully.');
     }
 
@@ -80,6 +99,13 @@ class CreatorSubscriptionAdminController extends Controller
 
         $subscription = CreatorPlatformSubscription::findOrFail($data['subscription_id']);
 
+        $old = $subscription->only([
+            'status',
+            'revoked_at',
+            'ends_at',
+            'admin_note',
+        ]);
+
         $subscription->update([
             'status' => 'canceled',
             'revoked_at' => now(),
@@ -88,6 +114,24 @@ class CreatorSubscriptionAdminController extends Controller
             'meta' => array_merge($subscription->meta ?? [], [
                 'revoked_manually' => true,
             ]),
+        ]);
+
+        CreatorSubscriptionAudit::create([
+            'creator_platform_subscription_id' => $subscription->id,
+            'user_id' => $subscription->user_id,
+            'admin_user_id' => $request->user()->id,
+            'action' => 'revoked',
+            'note' => $data['admin_note'] ?? 'Revoked manually from admin console.',
+            'old_values' => $old,
+            'new_values' => $subscription->fresh()->only([
+                'status',
+                'revoked_at',
+                'ends_at',
+                'admin_note',
+            ]),
+            'meta' => [
+                'provider' => $subscription->provider,
+            ],
         ]);
 
         return back()->with('success', 'Creator plan revoked.');

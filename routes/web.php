@@ -35,6 +35,7 @@ use App\Http\Controllers\Creator\CreatorBillingController;
 use App\Http\Controllers\Stripe\CreatorSubscriptionWebhookController;
 use App\Http\Controllers\Admin\CreatorSubscriptionAdminController;
 use App\Http\Controllers\Creator\PostMediaController;
+use App\Http\Controllers\Admin\StripeWebhookLogController;
 
 
 
@@ -159,6 +160,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/moderation/comments/{comment}', [ModerationController::class, 'deleteComment'])->name('moderation.comments.delete');
 
             Route::get('/creator-subscriptions', [CreatorSubscriptionAdminController::class, 'index'])->name('creator-subscriptions.index');
+
+            Route::get('/webhook-logs', [StripeWebhookLogController::class, 'index'])
+                ->name('webhook-logs.index');
+
+            Route::get('/webhook-logs/{stripeWebhookLog}', [StripeWebhookLogController::class, 'show'])
+                ->name('webhook-logs.show');
         });
 });
 

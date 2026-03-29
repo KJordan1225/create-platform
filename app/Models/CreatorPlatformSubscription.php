@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CreatorPlatformSubscription extends Model
 {
@@ -24,6 +25,10 @@ class CreatorPlatformSubscription extends Model
         'revoked_at',
         'assigned_by',
         'admin_note',
+        'trial_ending_notice_sent_at',
+        'cancel_scheduled_notice_sent_at',
+        'revoked_notice_sent_at',
+        'expired_at',
         'meta',
     ];
 
@@ -35,6 +40,10 @@ class CreatorPlatformSubscription extends Model
         'ends_at' => 'datetime',
         'canceled_at' => 'datetime',
         'revoked_at' => 'datetime',
+        'trial_ending_notice_sent_at' => 'datetime',
+        'cancel_scheduled_notice_sent_at' => 'datetime',
+        'revoked_notice_sent_at' => 'datetime',
+        'expired_at' => 'datetime',
         'meta' => 'array',
     ];
 
@@ -53,9 +62,14 @@ class CreatorPlatformSubscription extends Model
         return $this->belongsTo(User::class, 'assigned_by');
     }
 
+    public function audits(): HasMany
+    {
+        return $this->hasMany(CreatorSubscriptionAudit::class);
+    }
+
     public function isActive(): bool
     {
-        if ($this->revoked_at) {
+        if ($this->revoked_at || $this->expired_at) {
             return false;
         }
 
@@ -92,5 +106,13 @@ class CreatorPlatformSubscription extends Model
             'canceled', 'unpaid', 'inactive' => 'danger',
             default => 'secondary',
         };
+    }
+
+    public function isTrialEndingSoon(int $days = 3): bool
+    {
+        return $this->status === 'trialing'
+            && $this->trial_ends_at
+            && now()->lte($this->trial_ends_at)
+            && now()->diffInDays($this->trial_ends_at, false) <= $days;
     }
 }
