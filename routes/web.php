@@ -32,8 +32,13 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\Creator\StripeConnectController;
 use App\Http\Controllers\Creator\CreatorBillingController;
+use App\Http\Controllers\Stripe\CreatorSubscriptionWebhookController;
+use App\Http\Controllers\Admin\CreatorSubscriptionAdminController;
 
 
+
+Route::post('/stripe/webhooks/creator-subscription', CreatorSubscriptionWebhookController::class)
+    ->name('stripe.webhooks.creator-subscription');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
@@ -146,6 +151,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/moderation/comments/{comment}/hide', [ModerationController::class, 'hideComment'])->name('moderation.comments.hide');
             Route::post('/moderation/comments/{comment}/show', [ModerationController::class, 'showComment'])->name('moderation.comments.show');
             Route::delete('/moderation/comments/{comment}', [ModerationController::class, 'deleteComment'])->name('moderation.comments.delete');
+
+            Route::get('/creator-subscriptions', [CreatorSubscriptionAdminController::class, 'index'])->name('creator-subscriptions.index');
         });
 });
 

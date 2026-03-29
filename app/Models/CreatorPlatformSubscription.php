@@ -16,16 +16,16 @@ class CreatorPlatformSubscription extends Model
         'stripe_customer_id',
         'status',
         'starts_at',
-        'ends_at',
         'renews_at',
+        'ends_at',
         'canceled_at',
         'meta',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
         'renews_at' => 'datetime',
+        'ends_at' => 'datetime',
         'canceled_at' => 'datetime',
         'meta' => 'array',
     ];
@@ -42,7 +42,7 @@ class CreatorPlatformSubscription extends Model
 
     public function isActive(): bool
     {
-        if (!in_array($this->status, ['active', 'trialing'])) {
+        if (!in_array($this->status, ['active', 'trialing'], true)) {
             return false;
         }
 
@@ -51,5 +51,33 @@ class CreatorPlatformSubscription extends Model
         }
 
         return true;
+    }
+
+    public function isCanceledButStillActive(): bool
+    {
+        return $this->isActive()
+            && $this->ends_at !== null
+            && $this->ends_at->isFuture();
+    }
+
+    public function isFullyCanceled(): bool
+    {
+        return in_array($this->status, ['canceled', 'unpaid', 'inactive'], true)
+            || ($this->ends_at && $this->ends_at->isPast());
+    }
+
+    public function willCancelAtPeriodEnd(): bool
+    {
+        return (bool) data_get($this->meta, 'cancel_at_period_end', false);
+    }
+
+    public function statusBadgeClass(): string
+    {
+        return match ($this->status) {
+            'active', 'trialing' => 'success',
+            'past_due' => 'warning',
+            'canceled', 'unpaid', 'inactive' => 'danger',
+            default => 'secondary',
+        };
     }
 }

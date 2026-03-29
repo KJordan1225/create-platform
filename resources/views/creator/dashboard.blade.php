@@ -61,6 +61,8 @@
     </div>
 </div>
 
+@include('creator.billing.partials.subscription-card')
+
 <div class="mb-3">
     @include('creator.partials.stripe-status-badge', ['creator' => auth()->user()])
 </div>

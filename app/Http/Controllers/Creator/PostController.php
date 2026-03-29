@@ -70,6 +70,9 @@ class PostController extends Controller
 
     public function edit(Post $post)
     {
+        abort_unless($post->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()->canCreateCreatorPosts(), 403);
+    
         $this->authorize('update', $post);
 
         $post->load('media');
@@ -81,6 +84,7 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
         abort_unless($post->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()->canCreateCreatorPosts(), 403);
 
         $data = $request->validated();
 
@@ -116,6 +120,10 @@ class PostController extends Controller
 
     public function destroy(Post $post)
     {
+
+        abort_unless($post->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()->canCreateCreatorPosts(), 403);
+        
         $this->authorize('delete', $post);
 
         abort_unless($post->user_id === auth()->id(), 403);
