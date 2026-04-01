@@ -176,9 +176,7 @@
                     Back to Dashboard
                 </a>
 
-                <a href="{{ route('creator.billing.history') }}" class="btn btn-outline-primary rounded-pill px-4">
-                    View Full Billing History
-                </a>
+                
             </div>
         </div>
     </div>

@@ -77,8 +77,8 @@ class CreatorBillingController extends Controller
                 'user_id' => (string) $user->id,
                 'plan_id' => (string) $plan->id,
             ],
-            'success_url' => route('creator.billing.success', [], false) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('creator.billing.cancel', [], false),
+            'success_url' => route('creator.billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('creator.billing.cancel'),
         ]);
 
         return redirect()->away($session->url);

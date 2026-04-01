@@ -7,9 +7,7 @@
             </div>
 
             <div>
-                <a href="{{ route('creator.billing.history') }}" class="btn btn-outline-secondary rounded-pill px-4">
-                    Full History
-                </a>
+                
             </div>
         </div>
 

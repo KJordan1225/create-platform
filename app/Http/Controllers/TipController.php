@@ -123,9 +123,7 @@ class TipController extends Controller
     public function success(Request $request)
     {
         $sessionId = $request->query('session_id');
-
-        abort_unless($sessionId, 404);
-
+      
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $session = Session::retrieve([

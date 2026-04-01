@@ -36,8 +36,16 @@ use App\Http\Controllers\Stripe\CreatorSubscriptionWebhookController;
 use App\Http\Controllers\Admin\CreatorSubscriptionAdminController;
 use App\Http\Controllers\Creator\PostMediaController;
 use App\Http\Controllers\Admin\StripeWebhookLogController;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TestMail;
 
 
+
+Route::get('/test-mail', function () {
+    Mail::to('shadow902@gmail.com')->send(new TestMail());
+
+    return 'Test email sent.';
+});
 
 Route::post('/stripe/webhooks/creator-subscription', CreatorSubscriptionWebhookController::class)
     ->name('stripe.webhooks.creator-subscription');
