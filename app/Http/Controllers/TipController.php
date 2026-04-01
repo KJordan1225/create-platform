@@ -8,6 +8,7 @@ use App\Models\User;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 use App\Services\AbuseDetectionService;
+use Illuminate\Http\Request;
 
 class TipController extends Controller
 {

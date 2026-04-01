@@ -54,7 +54,7 @@ class CreatorManagementController extends Controller
     }
 
     public function suspend(User $user): RedirectResponse
-    {
+    { 
         abort_unless($user->role === 'creator', 404);
 
         $user->update([

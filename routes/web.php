@@ -42,7 +42,7 @@ use App\Mail\TestMail;
 
 
 Route::get('/test-mail', function () {
-    Mail::to('shadow902@gmail.com')->send(new TestMail());
+    Mail::to('shadow')->send(new TestMail());
 
     return 'Test email sent.';
 });
@@ -69,9 +69,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/subscription/success', [SubscriptionController::class, 'success'])->name('subscriptions.success');
     Route::post('/subscription/{creator:username}/cancel', [SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
 
+    Route::get('/tip/success', [TipController::class, 'success'])->name('tips.success');
     Route::get('/tip/{creator:username}', [TipController::class, 'showCheckout'])->name('tips.checkout');
     Route::post('/tip/{creator:username}', [TipController::class, 'checkout'])->name('tips.store');
-    Route::get('/tip/success', [TipController::class, 'success'])->name('tips.success');
+    
 
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
