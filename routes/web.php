@@ -38,6 +38,7 @@ use App\Http\Controllers\Creator\PostMediaController;
 use App\Http\Controllers\Admin\StripeWebhookLogController;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TestMail;
+use App\Http\Controllers\TestController;
 
 
 
@@ -46,6 +47,8 @@ Route::get('/test-mail', function () {
 
     return 'Test email sent.';
 });
+
+Route::get('/test-video', [TestController::class, 'index'])->name('test.video.index');
 
 Route::post('/stripe/webhooks/creator-subscription', CreatorSubscriptionWebhookController::class)
     ->name('stripe.webhooks.creator-subscription');

@@ -12,10 +12,10 @@ class CreatorPlatformPlanSeeder extends Seeder
         CreatorPlatformPlan::updateOrCreate(
             ['slug' => 'creator-monthly'],
             [
-                'name' => 'Creator Monthly',
-                'price' => 1999,
+                'name' => 'Creator One-time',
+                'price' => 1000,
                 'currency' => 'usd',
-                'interval' => 'month',
+                'interval' => 'one-tme',
                 'stripe_price_id' => env('STRIPE_CREATOR_MONTHLY_PRICE_ID'),
                 'is_active' => true,
                 'has_trial' => true,
