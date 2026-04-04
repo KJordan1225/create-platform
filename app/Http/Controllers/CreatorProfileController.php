@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CreatorProfile;
 use Illuminate\Http\Request;
 
-class CreatorProfileController extends Controller
+class CreatorProfileController extends Controller 
 {
     public function show(Request $request, string $slug)
     {

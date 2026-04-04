@@ -18,11 +18,21 @@
 
                 @if($firstMedia)
                     @if($firstMedia->media_type === 'video')
-                        <video class="media-thumb" controls>
-                            <source src="{{ $firstMedia->url }}" type="{{ $firstMedia->mime_type }}">
+                        @php 
+                            $url = $firstMedia->url;
+                            $path = str_replace('http://127.0.0.1:8000/storage/', '', $url);
+                        @endphp
+                        <a href="{{ route('videos.stream', $media) }}" class="text-decoration-none">
+                        <video class="media-thumb" controls @if(!$post->canBeViewedBy(auth()->user())) poster="" @endif>
+                            <source src="{{ asset('images/'.$firstMedia->file_path)}} type="{{ $firstMedia->mime_type }}">
                         </video>
+                        </a>
                     @else
-                        <img src="{{ $firstMedia->url }}" class="media-thumb" alt="">
+                        @php 
+                            $url = $firstMedia->url;
+                            $path = str_replace('http://127.0.0.1:8000/storage/', '', $url);
+                        @endphp
+                        <img src="{{ asset('images/'.$path) }}" class="media-thumb" alt="">
                     @endif
                 @endif
 

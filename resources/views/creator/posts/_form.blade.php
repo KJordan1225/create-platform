@@ -34,11 +34,22 @@
                     <div class="col-6 col-md-4 col-xl-3">
                         <div class="border rounded-4 overflow-hidden">
                             @if($media->media_type === 'video')
+                                @php 
+                                	$url = $media->url;
+                                	$path = str_replace('http://127.00.1:8000/storage/', '', $url);
+                                @endphp
+                                <a href="{{ route('videos.stream', $media) }}" class="text-decoration-none">
                                 <video class="w-100" controls style="height: 180px; object-fit: cover;">
-                                    <source src="{{ $media->url }}" type="{{ $media->mime_type }}">
+                                    <source src="{{ asset('images/'.$media->file_path)}}" type="video/mp4">
+                                    Your browser does not support the video tag.
                                 </video>
+                                </a>
                             @else
-                                <img src="{{ $media->url }}" class="w-100" style="height: 180px; object-fit: cover;" alt="">
+                                @php 
+                                	$url = $media->url;
+                                	$path = str_replace('https://starcitystarz.com/storage/', '', $url);
+                                @endphp
+                                <img src="{{ asset('images/'.$path) }}" class="w-100" style="height: 180px; object-fit: cover;" alt="">
                             @endif
 
                             <div class="p-2">

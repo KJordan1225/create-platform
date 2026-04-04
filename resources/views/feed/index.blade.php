@@ -22,9 +22,15 @@
                 @if($post->media->count())
                     @php $firstMedia = $post->media->first(); @endphp
                     @if($firstMedia->media_type === 'video')
-                        <video class="w-100" controls style="max-height: 520px; background: #000;">
-                            <source src="{{ $firstMedia->url }}" type="{{ $firstMedia->mime_type }}">
+                        @php 
+                            $url = $firstMedia->url;
+                            $path = str_replace('http://127.0.0.1:8000/storage/', '', $url);
+                        @endphp
+                        <a href="{{ route('videos.stream', $firstMedia) }}" class="text-decoration-none">
+                         class="w-100" controls style="max-height: 520px; background: #000;">
+                            <source src="{{ asset('images/'.$path) }}" type="{{ $firstMedia->mime_type }}">
                         </video>
+                        </a>
                     @else
                         <img src="{{ $firstMedia->url }}" class="w-100" style="max-height: 520px; object-fit: cover;" alt="">
                     @endif
