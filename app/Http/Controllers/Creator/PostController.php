@@ -51,8 +51,9 @@ class PostController extends Controller
 
         if ($request->hasFile('media')) {
             foreach ($request->file('media') as $index => $file) {
-                $path = $file->store('posts', 'public');
-
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('posts', $filename, 'public');
+                
                 PostMedia::create([
                     'post_id' => $post->id,
                     'file_path' => $path,

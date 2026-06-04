@@ -1,46 +1,39 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CreatorManagementController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ModerationController;
+use App\Http\Controllers\Admin\ReportManagementController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Creator\ApplyController;
 use App\Http\Controllers\Creator\DashboardController as CreatorDashboardController;
+use App\Http\Controllers\Creator\EarningsController;
 use App\Http\Controllers\Creator\PostController;
 use App\Http\Controllers\Creator\ProfileController;
+use App\Http\Controllers\Creator\StripeConnectController;
 use App\Http\Controllers\CreatorProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\FanFeedController;
+use App\Http\Controllers\FanSubscriptionController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PostController as PublicPostController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TipController;
+use App\Mail\TestMail as CustomMail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ReportManagementController;
-use App\Http\Controllers\Creator\EarningsController;
-use App\Http\Controllers\Admin\AnalyticsController;
-use App\Http\Controllers\PostController as PublicPostController;
-use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\FanSubscriptionController;
-use App\Http\Controllers\Admin\ModerationController;
-use Illuminate\Http\Request;
-use App\Http\Controllers\HelpController;
-use App\Http\Controllers\Creator\StripeConnectController;
-use App\Http\Controllers\Creator\CreatorBillingController;
-use App\Http\Controllers\Stripe\CreatorSubscriptionWebhookController;
-use App\Http\Controllers\Admin\CreatorSubscriptionAdminController;
-use App\Http\Controllers\Creator\PostMediaController;
-use App\Http\Controllers\Admin\StripeWebhookLogController;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\TestMail;
-use App\Http\Controllers\VideoController;
-
-
 
 Route::get('/test-mail', function () {
     Mail::to('shadow')->send(new TestMail());
@@ -56,6 +49,84 @@ Route::post('/stripe/webhooks/creator-subscription', CreatorSubscriptionWebhookC
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
 Route::get('/creators/{slug}', [CreatorProfileController::class, 'show'])->name('creators.show');
+
+// EMAIL TESTS //
+Route::get('/test-mail', function () {
+    Mail::to('shadow902@gmail.com')->send(new TestMail());
+    return 'Email sent!';
+});
+
+Route::get('/test-mailtrap', function () {
+    Mail::raw('This is a Mailtrap test email from Laravel.', function ($message) {
+        $message->to('shadow902@gmail.com')
+            ->subject('Mailtrap Test');
+    });
+
+    return 'Mail sent';
+});
+
+Route::get('/test-email', function () {
+    Mail::raw('Hostinger SMTP test email', function ($message) {
+        $message->to('shadow902@gmail.com')
+                ->subject('Hostinger Mail Test');
+    });
+
+    return 'Email sent!';
+});
+
+// END EMAIL TESTS //
+
+
+///// FORGOT PASSWORD ROUTES /////
+Route::get('/forgot-password', function () {
+    return view('auth.forgot-password');
+})->middleware('guest')->name('password.request');
+
+
+Route::post('/forgot-password', function (Request $request) {
+
+    $request->validate([
+        'email' => ['required', 'email'],
+    ]);
+
+    $status = Password::sendResetLink(
+        $request->only('email')
+    );
+
+    return $status === Password::RESET_LINK_SENT
+        ? back()->with('status', __($status))
+        : back()->withErrors(['email' => __($status)]);
+});
+
+Route::get('/reset-password/{token}', function (string $token) {
+    return view('auth.reset-password', ['token' => $token]);
+})->middleware('guest')->name('password.reset');
+
+
+Route::post('/reset-password', function (Request $request) {
+
+    $request->validate([
+        'token' => ['required'],
+        'email' => ['required', 'email'],
+        'password' => ['required', 'confirmed', 'min:8'],
+    ]);
+
+    $status = Password::reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+
+        function ($user) use ($request) {
+            $user->forceFill([
+                'password' => Hash::make($request->password),
+                'remember_token' => Str::random(60),
+            ])->save();
+        }
+    );
+
+    return $status === Password::PASSWORD_RESET
+        ? redirect()->route('login')->with('status', __($status))
+        : back()->withErrors(['email' => __($status)]);
+});
+///// FORGOT PASSWORD ROUTES - END /////
 
 Route::post('/stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
 

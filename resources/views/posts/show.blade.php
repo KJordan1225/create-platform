@@ -28,7 +28,7 @@
                     @else
                         <img src="{{ $firstMedia->url }}" class="w-100" style="max-height: 640px; object-fit: cover;" alt="">
                     @endif
-                @else
+                @else 
                     <div class="position-relative">
                         @if($firstMedia->media_type === 'video')
                             <div class="bg-dark" style="height: 420px;"></div>

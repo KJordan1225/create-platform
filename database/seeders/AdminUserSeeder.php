@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Platform Admin',
                 'username' => 'admin',
-                'password' => Hash::make('Welc0me!1225'),
+                'password' => Hash::make('password'),
                 'role' => 'admin',
                 'is_creator' => false,
                 'is_active' => true,

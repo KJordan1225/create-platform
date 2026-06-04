@@ -165,6 +165,7 @@
                     @if($firstMedia)
                         <div class="position-relative">
                             @if($firstMedia->media_type === 'video')
+<<<<<<< HEAD
                                 @php 
                                 	$url = $firstMedia->url;
                                 	$path = str_replace('http://127.0.0.1:8000/storage/', '', $url);
@@ -180,6 +181,13 @@
                                     $path = str_replace('http://127.0.0.1:8000/storage/', '', $url);
                                 @endphp
                                 <img src="{{ asset('images/'.$path) }}" class="media-thumb" alt="">
+=======
+                                <video class="media-thumb" controls @if(!$post->canBeViewedBy(auth()->user())) poster="" @endif>
+                                    <source src="{{ $firstMedia->url }}" type="{{ $firstMedia->mime_type }}">
+                                </video>
+                            @else
+                                <img src="{{ $firstMedia->url }}" class="media-thumb" alt="">
+>>>>>>> f3ba9b0 (update)
                             @endif
 
                             @if(!$post->canBeViewedBy(auth()->user()))

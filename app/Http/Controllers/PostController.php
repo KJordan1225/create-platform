@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
-class PostController extends Controller
+class PostController extends Controller 
 {
     use AuthorizesRequests;
     
